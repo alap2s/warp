@@ -8,7 +8,7 @@ import {
   X, Check, Clock, MapPin, LineSquiggle, Coffee, MessageSquare, Code, Plane,
   Book, Mic, Film, Music, ShoppingCart, Utensils, Beer, Dumbbell, Sun, Moon,
   Wine, Sofa, Tv2, Home, PartyPopper, Palette, CakeSlice, CupSoda, Trophy,
-  Gamepad2, Bike, HeartPulse, Swords, Play, Sailboat, Ship, Dices
+  Gamepad2, Bike, HeartPulse, Swords, Play, Sailboat, Ship, Dices, Trash2, Share
 } from 'lucide-react';
 
 const iconMap: { [key: string]: React.ElementType } = {
@@ -72,7 +72,7 @@ const iconMap: { [key: string]: React.ElementType } = {
   'boardgame': Dices,
 };
 
-const getIconForInput = (text: string): React.ElementType => {
+export const getIcon = (text: string): React.ElementType => {
   const words = text.toLowerCase().split(/[\s,.]+/); // split by space, comma, or period
   for (const word of words) {
     if (iconMap[word]) {
@@ -124,39 +124,58 @@ const formatDayOption = (date: Date) => {
     return date.toLocaleDateString('en-US', options);
 }
 
-export const MakeWarpDialog = ({ onClose }: { onClose: () => void }) => {
+export type FormData = {
+  what: string;
+  when: Date;
+  where: string;
+  icon: React.ElementType;
+};
+
+export const MakeWarpDialog = ({ 
+  onClose, 
+  onPost,
+  initialData,
+  onDelete,
+}: { 
+  onClose: () => void, 
+  onPost: (data: FormData) => void,
+  initialData?: FormData | null,
+  onDelete?: () => void,
+}) => {
   const whatInputRef = useRef<HTMLInputElement>(null);
-  const [whatValue, setWhatValue] = useState('');
-  const [whenValue, setWhenValue] = useState<Date>(getInitialWhenDate());
-  const [whereValue, setWhereValue] = useState('');
-  const [CurrentIcon, setCurrentIcon] = useState<React.ElementType>(() => LineSquiggle);
+  const [whatValue, setWhatValue] = useState<string>(initialData?.what || '');
+  const [whenValue, setWhenValue] = useState<Date>(initialData?.when ? new Date(initialData.when) : getInitialWhenDate());
+  const [whereValue, setWhereValue] = useState<string>(initialData?.where || '');
+  const [CurrentIcon, setCurrentIcon] = useState<React.ElementType>(() => initialData?.icon || LineSquiggle);
 
   useEffect(() => {
     whatInputRef.current?.focus();
     
-    setWhereValue('Fetching location...');
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setWhereValue(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-        },
-        () => {
-          setWhereValue(''); // Clear on error
-        }
-      );
-    } else {
-      setWhereValue(''); // Clear if not supported
+    if (!initialData) {
+      setWhereValue('Fetching location...');
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setWhereValue(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+          },
+          () => {
+            setWhereValue(''); // Clear on error
+          }
+        );
+      } else {
+        setWhereValue(''); // Clear if not supported
+      }
     }
-  }, []);
+  }, [initialData]);
 
   useEffect(() => {
-    const NewIcon = getIconForInput(whatValue);
+    const NewIcon = getIcon(whatValue);
     setCurrentIcon(() => NewIcon);
   }, [whatValue]);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const [year, month, day] = e.target.value.split('-').map(Number);
+    const [year, month, day] = e.target.value.split('-') as any[];
     const newDate = new Date(whenValue);
     newDate.setFullYear(year, month - 1, day);
     setWhenValue(newDate);
@@ -173,6 +192,15 @@ export const MakeWarpDialog = ({ onClose }: { onClose: () => void }) => {
     setWhenValue(newDate);
   };
 
+  const handlePost = () => {
+    onPost({
+      what: whatValue,
+      when: whenValue,
+      where: whereValue,
+      icon: CurrentIcon,
+    });
+  };
+
   const dayOptions = Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() + i);
@@ -181,14 +209,14 @@ export const MakeWarpDialog = ({ onClose }: { onClose: () => void }) => {
 
   return (
     <motion.div 
-      className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center"
+      className="fixed inset-0 bg-transparent z-50 flex items-center justify-center"
       onClick={onClose}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       <motion.div 
-        className="bg-white rounded-2xl shadow-xl w-[350px] p-4 flex flex-col gap-3"
+        className="bg-black rounded-2xl shadow-xl w-[350px] p-4 flex flex-col gap-3 border border-[#555]"
         onClick={(e) => e.stopPropagation()}
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -196,15 +224,26 @@ export const MakeWarpDialog = ({ onClose }: { onClose: () => void }) => {
         transition={{ duration: 0.2 }}
       >
         <div className="flex justify-between items-start">
-          <div className="font-black text-5xl leading-none text-[#1F1F1F]">
+          <div className="font-black text-5xl leading-none text-white">
             <p>Make</p>
             <p>Warp</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" strokeWidth={2} />
-            </Button>
-            <Button variant="default" size="icon" onClick={onClose}>
+            {onDelete && (
+              <Button variant="outline" size="icon" onClick={onDelete}>
+                <Trash2 className="h-4 w-4" strokeWidth={2} />
+              </Button>
+            )}
+            {initialData ? (
+              <Button variant="outline" size="icon" onClick={() => console.log('Share clicked')}>
+                <Share className="h-4 w-4" strokeWidth={2} />
+              </Button>
+            ) : (
+              <Button variant="outline" size="icon" onClick={onClose}>
+                <X className="h-4 w-4" strokeWidth={2} />
+              </Button>
+            )}
+            <Button variant="default" size="icon" onClick={handlePost}>
               <Check className="h-4 w-4" strokeWidth={2} />
             </Button>
           </div>
@@ -218,12 +257,12 @@ export const MakeWarpDialog = ({ onClose }: { onClose: () => void }) => {
             value={whatValue}
             onChange={(e) => setWhatValue(e.target.value)}
           />
-          <CurrentIcon className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${whatValue ? 'text-[#1F1F1F]' : 'text-gray-500'}`} strokeWidth={2} />
+          <CurrentIcon className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${whatValue ? 'text-white' : 'text-gray-400'}`} strokeWidth={2} />
         </div>
         
         <div className="relative">
-          <div className="flex items-center w-full h-12 rounded-lg border border-transparent bg-[#1F1F1F]/[.06] px-3 text-base font-medium">
-            <Clock className="h-5 w-5 text-[#1F1F1F]" strokeWidth={2} />
+          <div className="flex items-center w-full h-12 rounded-lg border border-transparent bg-[#2D2D2D] px-3 text-base font-medium text-white">
+            <Clock className="h-5 w-5 text-white" strokeWidth={2} />
             <div className="flex-grow flex items-center justify-between pl-2">
               <select 
                   value={formatDateForSelect(whenValue)}
@@ -267,7 +306,7 @@ export const MakeWarpDialog = ({ onClose }: { onClose: () => void }) => {
             onChange={(e) => setWhereValue(e.target.value)}
             className="pl-10" 
           />
-          <MapPin className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${whereValue && whereValue !== 'Fetching location...' ? 'text-[#1F1F1F]' : 'text-gray-500'}`} strokeWidth={2} />
+          <MapPin className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${whereValue && whereValue !== 'Fetching location...' ? 'text-white' : 'text-gray-400'}`} strokeWidth={2} />
         </div>
       </motion.div>
     </motion.div>

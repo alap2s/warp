@@ -1,16 +1,38 @@
 'use client';
 
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useSpring, Spring, motion, AnimatePresence } from 'framer-motion';
 import * as THREE from 'three';
-import { MakeWarpDialog } from './MakeWarpDialog';
+import { MakeWarpDialog, FormData } from './MakeWarpDialog';
+import WarpTile from './WarpTile';
 
-const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength }: { isPointerDown: boolean, pointerPos: THREE.Vector3, bumpStrength: Spring }) => {
+const smoothstep = (min: number, max: number, value: number) => {
+  const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  return x * x * (3 - 2 * x);
+};
+
+const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, warpTileRect }: { 
+  isPointerDown: boolean, 
+  pointerPos: THREE.Vector3, 
+  bumpStrength: Spring,
+  dialogRect: { width: number, height: number } | null,
+  warpTileRect: { width: number, height: number, cornerRadius: number } | null
+}) => {
   const meshRef = useRef<THREE.Mesh>(null!);
   const { viewport } = useThree();
   
   const originalPositions = useRef<Float32Array>();
+  const dialogBumpStrength = useSpring(0, { stiffness: 150, damping: 50 });
+  const tileBumpStrength = useSpring(0, { stiffness: 150, damping: 50 });
+
+  useEffect(() => {
+    dialogBumpStrength.set(dialogRect ? -1.2 : 0);
+  }, [dialogRect, dialogBumpStrength]);
+
+  useEffect(() => {
+    tileBumpStrength.set(warpTileRect ? 0.8 : 0);
+  }, [warpTileRect, tileBumpStrength]);
 
   const texture = useMemo(() => {
     const size = 256;
@@ -46,14 +68,15 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength }: { isPointer
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
     
-    // Animate texture offset for a subtle flowing effect
-    meshRef.current.material.map.offset.x = clock.getElapsedTime() * 0.01;
-    meshRef.current.material.map.offset.y = clock.getElapsedTime() * 0.01;
+    // meshRef.current.material.map.offset.x = clock.getElapsedTime() * 0.01;
+    // meshRef.current.material.map.offset.y = clock.getElapsedTime() * 0.01;
     
     const vertices = meshRef.current.geometry.attributes.position.array as Float32Array;
     const strength = bumpStrength.get();
+    const animatedDialogStrength = dialogBumpStrength.get();
+    const animatedTileStrength = tileBumpStrength.get();
 
-    if (strength === 0 && !isPointerDown) {
+    if (strength === 0 && !isPointerDown && animatedDialogStrength === 0 && animatedTileStrength === 0) {
       if (vertices.every((v, i) => v === originalPositions.current![i])) return;
       
       for (let i = 0; i < vertices.length; i++) {
@@ -68,13 +91,53 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength }: { isPointer
       const x = originalPositions.current![i];
       const y = originalPositions.current![i+1];
       
-      const distance = new THREE.Vector2(x, y).distanceTo(
+      const mouseDistance = new THREE.Vector2(x, y).distanceTo(
         new THREE.Vector2(pointerPos.x, -pointerPos.z)
       );
 
       const radius = 1.67;
-      const ease = 0.5 * (1 + Math.cos(Math.PI * Math.min(distance / radius, 1)));
-      const zDisplacement = strength * ease * -1.5;
+      const mouseEase = 0.5 * (1 + Math.cos(Math.PI * Math.min(mouseDistance / radius, 1)));
+      let zDisplacement = isPointerDown ? strength * mouseEase * -1.5 : 0;
+      
+      if (dialogRect && animatedDialogStrength !== 0) {
+        const rectHalfWidth = dialogRect.width / 2;
+        const rectHalfHeight = dialogRect.height / 2;
+        const edgeSoftness = 2.0;
+
+        const sdfBox = (px: number, py: number, w: number, h: number) => {
+            const dx = Math.abs(px) - w;
+            const dy = Math.abs(py) - h;
+            return Math.sqrt(Math.max(dx, 0)**2 + Math.max(dy, 0)**2) + Math.min(Math.max(dx, dy), 0);
+        }
+        
+        const dist = sdfBox(x, y, rectHalfWidth, rectHalfHeight);
+        
+        const factor = smoothstep(-edgeSoftness, 0, dist);
+        zDisplacement += animatedDialogStrength * factor;
+      }
+
+      if (warpTileRect && animatedTileStrength !== 0) {
+        const halfWidth = warpTileRect.width / 2;
+        const halfHeight = warpTileRect.height / 2;
+        const radius = warpTileRect.cornerRadius;
+
+        const sdfRoundedBox = (p, b, r) => {
+          const qx = Math.abs(p.x) - b.x + r;
+          const qy = Math.abs(p.y) - b.y + r;
+          return Math.min(Math.max(qx, qy), 0.0) + new THREE.Vector2(Math.max(qx, 0.0), Math.max(qy, 0.0)).length() - r;
+        }
+        
+        const dist = sdfRoundedBox(
+          new THREE.Vector2(x, y), 
+          new THREE.Vector2(halfWidth, halfHeight), 
+          radius
+        );
+
+        const edgeSoftness = 0.15;
+        const factor = 1.0 - smoothstep(0, edgeSoftness, dist);
+
+        zDisplacement += animatedTileStrength * factor;
+      }
 
       vertices[i + 2] = originalPositions.current![i+2] + zDisplacement;
     }
@@ -99,16 +162,20 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength }: { isPointer
   );
 };
 
-const InteractiveGrid = ({ onPointerUp }: { onPointerUp: () => void }) => {
+const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect }: { 
+  onPointerUp: (e: any) => void, 
+  dialogRect: { width: number, height: number } | null,
+  warpTileRect: { width: number, height: number, cornerRadius: number } | null 
+}) => {
   const [isPointerDown, setPointerDown] = useState(false);
-  const [pointerPos, setPointerPos] = useState(new THREE.Vector3());
-  const bumpStrength = useSpring(0, { stiffness: 400, damping: 30 });
+  const pointerPos = useRef(new THREE.Vector3());
+  const bumpStrength = useSpring(0, { stiffness: 150, damping: 50 });
   const { viewport } = useThree();
 
   const handlePointerDown = (e: any) => {
     e.stopPropagation();
     setPointerDown(true);
-    setPointerPos(e.point);
+    pointerPos.current = e.point;
     bumpStrength.set(1);
   };
 
@@ -117,14 +184,14 @@ const InteractiveGrid = ({ onPointerUp }: { onPointerUp: () => void }) => {
     if (isPointerDown) {
       setPointerDown(false);
       bumpStrength.set(0);
-      onPointerUp();
+      onPointerUp(e);
     }
   };
   
   const handlePointerMove = (e: any) => {
     if (isPointerDown || e.buttons === 1) {
       e.stopPropagation();
-      setPointerPos(e.point);
+      pointerPos.current = e.point;
       if (!isPointerDown) {
         setPointerDown(true);
         bumpStrength.set(1);
@@ -136,8 +203,15 @@ const InteractiveGrid = ({ onPointerUp }: { onPointerUp: () => void }) => {
     <>
       <ambientLight intensity={1.5} />
       <pointLight position={[0, 10, 5]} intensity={150} />
-      <DeformableGrid isPointerDown={isPointerDown} pointerPos={pointerPos} bumpStrength={bumpStrength} />
+      <DeformableGrid 
+        isPointerDown={isPointerDown} 
+        pointerPos={pointerPos.current} 
+        bumpStrength={bumpStrength}
+        dialogRect={dialogRect}
+        warpTileRect={warpTileRect}
+      />
       <mesh
+        position={[0, -1, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
@@ -151,19 +225,104 @@ const InteractiveGrid = ({ onPointerUp }: { onPointerUp: () => void }) => {
   );
 };
 
+const ViewportReporter = ({ onViewportChange }: { onViewportChange: (viewport: any, size: any) => void }) => {
+  const { viewport, size } = useThree();
+  useEffect(() => {
+    onViewportChange(viewport, size);
+  }, [viewport, size, onViewportChange]);
+  return null;
+}
+
 const GridCanvas = () => {
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [activeWarp, setActiveWarp] = useState<FormData | null>(null);
+  const [warpToEdit, setWarpToEdit] = useState<FormData | null>(null);
+  const [viewportInfo, setViewportInfo] = useState<{ viewport: any, size: any } | null>(null);
+
+  const handleGridClick = () => {
+    setWarpToEdit(null);
+    setDialogOpen(true);
+  };
+
+  const handlePost = (data: FormData) => {
+    setActiveWarp(data);
+    setDialogOpen(false);
+    setWarpToEdit(null);
+  };
+
+  const handleStartEdit = () => {
+    if (!activeWarp) return;
+    setWarpToEdit(activeWarp);
+    setActiveWarp(null);
+    setDialogOpen(true);
+  };
+
+  const handleDelete = () => {
+    setActiveWarp(null);
+    setDialogOpen(false);
+    setWarpToEdit(null);
+  }
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    if (warpToEdit) {
+      setActiveWarp(warpToEdit);
+    }
+    setWarpToEdit(null);
+  }
+
+  const dialogRect = useMemo(() => {
+    if (!isDialogOpen || !viewportInfo) return null;
+
+    const { viewport, size } = viewportInfo;
+    const dialogWidthPx = 550;
+    const dialogHeightPx = 550;
+
+    const dialogWorldWidth = (dialogWidthPx / size.width) * viewport.width;
+    const dialogWorldHeight = (dialogHeightPx / size.height) * viewport.height;
+    
+    return { width: dialogWorldWidth, height: dialogWorldHeight };
+  }, [isDialogOpen, viewportInfo]);
+
+  const warpTileRect = useMemo(() => {
+    if (!activeWarp || !viewportInfo) return null;
+
+    const { viewport, size } = viewportInfo;
+    const tileWidthPx = 84;
+    const tileHeightPx = 84;
+    const tileCornerRadiusPx = 24;
+
+    const tileWorldWidth = (tileWidthPx / size.width) * viewport.width;
+    const tileWorldHeight = (tileHeightPx / size.height) * viewport.height;
+    const cornerRadius = (16 / size.width) * viewport.width;
+
+    return { width: tileWorldWidth, height: tileWorldHeight, cornerRadius };
+  }, [activeWarp, viewportInfo]);
 
   return (
-    <div className="absolute top-0 left-0 w-full h-full bg-black cursor-grab active:cursor-grabbing">
-      <Canvas camera={{ position: [0, 8, 0], fov: 50 }}>
-        <InteractiveGrid onPointerUp={() => setDialogOpen(true)} />
+    <div className="w-screen h-screen bg-black">
+       <Canvas camera={{ position: [0, 10, 0.1], fov: 50 }}>
+        <ViewportReporter onViewportChange={(viewport, size) => setViewportInfo({ viewport, size })} />
+        <InteractiveGrid 
+          onPointerUp={handleGridClick} 
+          dialogRect={dialogRect}
+          warpTileRect={warpTileRect}
+        />
       </Canvas>
       <AnimatePresence>
-        {isDialogOpen && <MakeWarpDialog onClose={() => setDialogOpen(false)} />}
+        {isDialogOpen && (
+          <MakeWarpDialog
+            key={warpToEdit ? 'edit' : 'new'}
+            initialData={warpToEdit}
+            onClose={handleCloseDialog}
+            onPost={handlePost}
+            onDelete={warpToEdit ? handleDelete : undefined}
+          />
+        )}
       </AnimatePresence>
+      {activeWarp && <WarpTile warp={activeWarp} onRemove={handleStartEdit} />}
     </div>
-  )
-}
+  );
+};
 
 export default GridCanvas;
