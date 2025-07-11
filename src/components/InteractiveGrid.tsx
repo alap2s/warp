@@ -6,6 +6,7 @@ import { useSpring, Spring, motion, AnimatePresence } from 'framer-motion';
 import * as THREE from 'three';
 import { MakeWarpDialog, FormData } from './MakeWarpDialog';
 import WarpTile from './WarpTile';
+import ProfileDialog from './ProfileDialog';
 
 const smoothstep = (min: number, max: number, value: number) => {
   const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
@@ -16,7 +17,7 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   isPointerDown: boolean, 
   pointerPos: THREE.Vector3, 
   bumpStrength: Spring,
-  dialogRect: { width: number, height: number } | null,
+  dialogRect: { width: number, height: number, cornerRadius: number } | null,
   warpTileRect: { width: number, height: number, cornerRadius: number } | null
 }) => {
   const meshRef = useRef<THREE.Mesh>(null!);
@@ -31,7 +32,7 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   }, [dialogRect, dialogBumpStrength]);
 
   useEffect(() => {
-    tileBumpStrength.set(warpTileRect ? 0.8 : 0);
+    tileBumpStrength.set(warpTileRect ? -0.8 : 0);
   }, [warpTileRect, tileBumpStrength]);
 
   const texture = useMemo(() => {
@@ -87,6 +88,12 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
       return;
     };
 
+    const sdfRoundedBox = (p: THREE.Vector2, b: THREE.Vector2, r: number) => {
+      const qx = Math.abs(p.x) - b.x + r;
+      const qy = Math.abs(p.y) - b.y + r;
+      return Math.min(Math.max(qx, qy), 0.0) + new THREE.Vector2(Math.max(qx, 0.0), Math.max(qy, 0.0)).length() - r;
+    }
+
     for (let i = 0; i < vertices.length; i += 3) {
       const x = originalPositions.current![i];
       const y = originalPositions.current![i+1];
@@ -102,17 +109,16 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
       if (dialogRect && animatedDialogStrength !== 0) {
         const rectHalfWidth = dialogRect.width / 2;
         const rectHalfHeight = dialogRect.height / 2;
-        const edgeSoftness = 2.0;
-
-        const sdfBox = (px: number, py: number, w: number, h: number) => {
-            const dx = Math.abs(px) - w;
-            const dy = Math.abs(py) - h;
-            return Math.sqrt(Math.max(dx, 0)**2 + Math.max(dy, 0)**2) + Math.min(Math.max(dx, dy), 0);
-        }
+        const cornerRadius = dialogRect.cornerRadius;
         
-        const dist = sdfBox(x, y, rectHalfWidth, rectHalfHeight);
+        const dist = sdfRoundedBox(
+          new THREE.Vector2(x, y), 
+          new THREE.Vector2(rectHalfWidth, rectHalfHeight), 
+          cornerRadius
+        );
         
-        const factor = smoothstep(-edgeSoftness, 0, dist);
+        const edgeSoftness = 0.5;
+        const factor = 1.0 - smoothstep(0, edgeSoftness, dist);
         zDisplacement += animatedDialogStrength * factor;
       }
 
@@ -235,9 +241,21 @@ const ViewportReporter = ({ onViewportChange }: { onViewportChange: (viewport: a
 
 const GridCanvas = () => {
   const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isProfileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ username: string; icon: string } | null>(null);
   const [activeWarp, setActiveWarp] = useState<FormData | null>(null);
   const [warpToEdit, setWarpToEdit] = useState<FormData | null>(null);
   const [viewportInfo, setViewportInfo] = useState<{ viewport: any, size: any } | null>(null);
+  const [dialogSize, setDialogSize] = useState<{ width: number, height: number } | null>(null);
+
+  useEffect(() => {
+    const profile = localStorage.getItem('userProfile');
+    if (profile) {
+      setUserProfile(JSON.parse(profile));
+    } else {
+      setProfileDialogOpen(true);
+    }
+  }, []);
 
   const handleGridClick = () => {
     setWarpToEdit(null);
@@ -269,20 +287,30 @@ const GridCanvas = () => {
       setActiveWarp(warpToEdit);
     }
     setWarpToEdit(null);
+    setDialogSize(null);
   }
 
+  const handleSaveProfile = (data: { username: string; icon: string }) => {
+    localStorage.setItem('userProfile', JSON.stringify(data));
+    setUserProfile(data);
+    setProfileDialogOpen(false);
+    setDialogSize(null);
+  };
+
   const dialogRect = useMemo(() => {
-    if (!isDialogOpen || !viewportInfo) return null;
+    if (!dialogSize || !viewportInfo) return null;
 
     const { viewport, size } = viewportInfo;
-    const dialogWidthPx = 550;
-    const dialogHeightPx = 550;
+    const dialogWidthPx = dialogSize.width * 1.2;
+    const dialogHeightPx = dialogSize.height * 1.2;
+    const dialogCornerRadiusPx = 48;
 
     const dialogWorldWidth = (dialogWidthPx / size.width) * viewport.width;
     const dialogWorldHeight = (dialogHeightPx / size.height) * viewport.height;
+    const cornerRadius = (dialogCornerRadiusPx / size.width) * viewport.width;
     
-    return { width: dialogWorldWidth, height: dialogWorldHeight };
-  }, [isDialogOpen, viewportInfo]);
+    return { width: dialogWorldWidth, height: dialogWorldHeight, cornerRadius };
+  }, [dialogSize, viewportInfo]);
 
   const warpTileRect = useMemo(() => {
     if (!activeWarp || !viewportInfo) return null;
@@ -317,10 +345,22 @@ const GridCanvas = () => {
             onClose={handleCloseDialog}
             onPost={handlePost}
             onDelete={warpToEdit ? handleDelete : undefined}
+            onSizeChange={setDialogSize}
           />
         )}
       </AnimatePresence>
       {activeWarp && <WarpTile warp={activeWarp} onRemove={handleStartEdit} />}
+      {isProfileDialogOpen && (
+        <ProfileDialog
+          initialData={userProfile}
+          onSave={handleSaveProfile}
+          onClose={() => {
+            setProfileDialogOpen(false)
+            setDialogSize(null);
+          }}
+          onSizeChange={setDialogSize}
+        />
+      )}
     </div>
   );
 };

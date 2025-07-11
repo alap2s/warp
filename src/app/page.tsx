@@ -1,11 +1,15 @@
 'use client';
 
-import GridCanvas from '@/components/InteractiveGrid';
+import dynamic from 'next/dynamic';
+
+const InteractiveGrid = dynamic(() => import('@/components/InteractiveGrid'), {
+  ssr: false,
+});
 
 export default function Home() {
   return (
     <div className="relative w-screen h-screen">
-      <GridCanvas />
+      <InteractiveGrid />
     </div>
   );
 }

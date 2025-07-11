@@ -1,15 +1,15 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Button } from './ui/Button';
-import { Input } from './ui/Input';
-import { 
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import {
   X, Check, Clock, MapPin, LineSquiggle, Coffee, MessageSquare, Code, Plane,
   Book, Mic, Film, Music, ShoppingCart, Utensils, Beer, Dumbbell, Sun, Moon,
   Wine, Sofa, Tv2, Home, PartyPopper, Palette, CakeSlice, CupSoda, Trophy,
   Gamepad2, Bike, HeartPulse, Swords, Play, Sailboat, Ship, Dices, Trash2, Share
 } from 'lucide-react';
+import Dialog from './ui/Dialog';
 
 const iconMap: { [key: string]: React.ElementType } = {
   // Existing items
@@ -69,7 +69,6 @@ const iconMap: { [key: string]: React.ElementType } = {
   'sail': Sailboat,
   'ship': Ship,
   'dice': Dices,
-  'boardgame': Dices,
 };
 
 export const getIcon = (text: string): React.ElementType => {
@@ -131,16 +130,18 @@ export type FormData = {
   icon: React.ElementType;
 };
 
-export const MakeWarpDialog = ({ 
-  onClose, 
+export const MakeWarpDialog = ({
+  onClose,
   onPost,
   initialData,
   onDelete,
-}: { 
-  onClose: () => void, 
+  onSizeChange,
+}: {
+  onClose: () => void,
   onPost: (data: FormData) => void,
   initialData?: FormData | null,
   onDelete?: () => void,
+  onSizeChange?: (size: { width: number, height: number }) => void,
 }) => {
   const whatInputRef = useRef<HTMLInputElement>(null);
   const [whatValue, setWhatValue] = useState<string>(initialData?.what || '');
@@ -150,7 +151,7 @@ export const MakeWarpDialog = ({
 
   useEffect(() => {
     whatInputRef.current?.focus();
-    
+
     if (!initialData) {
       setWhereValue('Fetching location...');
       if (navigator.geolocation) {
@@ -175,9 +176,9 @@ export const MakeWarpDialog = ({
   }, [whatValue]);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const [year, month, day] = e.target.value.split('-') as any[];
+    const [year, month, day] = e.target.value.split('-');
     const newDate = new Date(whenValue);
-    newDate.setFullYear(year, month - 1, day);
+    newDate.setFullYear(parseInt(year), parseInt(month) - 1, parseInt(day));
     setWhenValue(newDate);
   };
 
@@ -208,21 +209,7 @@ export const MakeWarpDialog = ({
   });
 
   return (
-    <motion.div 
-      className="fixed inset-0 bg-transparent z-50 flex items-center justify-center"
-      onClick={onClose}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.div 
-        className="bg-black rounded-2xl shadow-xl w-[350px] p-4 flex flex-col gap-3 border border-[#555]"
-        onClick={(e) => e.stopPropagation()}
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        transition={{ duration: 0.2 }}
-      >
+    <Dialog onClose={onClose} onSizeChange={onSizeChange}>
         <div className="flex justify-between items-start">
           <div className="font-black text-5xl leading-none text-white">
             <p>Make</p>
@@ -250,39 +237,39 @@ export const MakeWarpDialog = ({
         </div>
 
         <div className="relative">
-          <Input 
-            ref={whatInputRef} 
-            placeholder="What?" 
+          <Input
+            ref={whatInputRef}
+            placeholder="What?"
             className="pl-10"
             value={whatValue}
             onChange={(e) => setWhatValue(e.target.value)}
           />
           <CurrentIcon className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${whatValue ? 'text-white' : 'text-gray-400'}`} strokeWidth={2} />
         </div>
-        
+
         <div className="relative">
           <div className="flex items-center w-full h-12 rounded-lg border border-transparent bg-[#2D2D2D] px-3 text-base font-medium text-white">
             <Clock className="h-5 w-5 text-white" strokeWidth={2} />
             <div className="flex-grow flex items-center justify-between pl-2">
-              <select 
+              <select
                   value={formatDateForSelect(whenValue)}
                   onChange={handleDateChange}
                   className="bg-transparent focus:outline-none appearance-none"
               >
                   {dayOptions.map(date => (
-                      <option key={formatDateForSelect(date)} value={formatDateForSelect(date)}>
+                      <option key={formatDateForSelect(date)} value={formatDateForSelect(date)} className="bg-black text-white">
                           {formatDayOption(date)}
                       </option>
                   ))}
               </select>
               <div className="flex items-center">
-                <select 
+                <select
                     value={whenValue.getHours().toString()}
                     onChange={(e) => handleTimeChange('hours', e.target.value)}
                     className="bg-transparent focus:outline-none appearance-none"
                 >
                     {Array.from({ length: 24 }, (_, i) => i).map(hour => (
-                        <option key={hour} value={hour.toString()}>{hour.toString().padStart(2, '0')}</option>
+                        <option key={hour} value={hour.toString()} className="bg-black text-white">{hour.toString().padStart(2, '0')}</option>
                     ))}
                 </select>
                 <span className="mx-1">:</span>
@@ -291,8 +278,8 @@ export const MakeWarpDialog = ({
                     onChange={(e) => handleTimeChange('minutes', e.target.value)}
                     className="bg-transparent focus:outline-none appearance-none"
                 >
-                    <option value="0">00</option>
-                    <option value="30">30</option>
+                    <option value="0" className="bg-black text-white">00</option>
+                    <option value="30" className="bg-black text-white">30</option>
                 </select>
               </div>
             </div>
@@ -300,15 +287,14 @@ export const MakeWarpDialog = ({
         </div>
 
         <div className="relative">
-          <Input 
-            placeholder="Where?" 
+          <Input
+            placeholder="Where?"
             value={whereValue}
             onChange={(e) => setWhereValue(e.target.value)}
-            className="pl-10" 
+            className="pl-10"
           />
           <MapPin className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${whereValue && whereValue !== 'Fetching location...' ? 'text-white' : 'text-gray-400'}`} strokeWidth={2} />
         </div>
-      </motion.div>
-    </motion.div>
+    </Dialog>
   );
-}; 
+};
