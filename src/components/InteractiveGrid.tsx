@@ -23,6 +23,9 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
 }) => {
   const meshRef = useRef<THREE.Mesh>(null!);
   const { viewport } = useThree();
+  const rippleRef = useRef<{ active: boolean, startTime: number, rect: any, isOpening: boolean } | null>(null);
+  const prevDialogRect = useRef(dialogRect);
+  const prevWarpTileRect = useRef(warpTileRect);
   
   const originalPositions = useRef<Float32Array>();
   const dialogBumpStrength = useSpring(0, { stiffness: 150, damping: 50 });
@@ -61,6 +64,12 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
     return tex;
   }, []);
 
+  const sdfRoundedBox = (p: THREE.Vector2, b: THREE.Vector2, r: number) => {
+    const qx = Math.abs(p.x) - b.x + r;
+    const qy = Math.abs(p.y) - b.y + r;
+    return Math.min(Math.max(qx, qy), 0.0) + new THREE.Vector2(Math.max(qx, 0.0), Math.max(qy, 0.0)).length() - r;
+  }
+
   const geometry = useMemo(() => {
     const geom = new THREE.PlaneGeometry(viewport.width * 1.5, viewport.height * 1.5, 75, 75);
     originalPositions.current = new Float32Array(geom.attributes.position.array);
@@ -70,6 +79,33 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
     
+    const wasDialog = !!prevDialogRect.current;
+    const isDialog = !!dialogRect;
+    const wasTile = !!prevWarpTileRect.current;
+    const isTile = !!warpTileRect;
+
+    if (!rippleRef.current?.active) {
+      if (wasTile && !isTile && !wasDialog && isDialog) {
+        rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect: prevWarpTileRect.current, isOpening: true };
+      }
+      else if (wasDialog && !isDialog && !wasTile && isTile) {
+        rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect: prevDialogRect.current, isOpening: true };
+      }
+      else if (wasDialog !== isDialog) {
+        const isOpening = isDialog;
+        const rect = isOpening ? dialogRect : prevDialogRect.current;
+        rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect, isOpening };
+      }
+      else if (wasTile !== isTile) {
+        const isOpening = isTile;
+        const rect = isOpening ? warpTileRect : prevWarpTileRect.current;
+        rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect, isOpening };
+      }
+    }
+
+    prevDialogRect.current = dialogRect;
+    prevWarpTileRect.current = warpTileRect;
+
     // meshRef.current.material.map.offset.x = clock.getElapsedTime() * 0.01;
     // meshRef.current.material.map.offset.y = clock.getElapsedTime() * 0.01;
     
@@ -78,7 +114,7 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
     const animatedDialogStrength = dialogBumpStrength.get();
     const animatedTileStrength = tileBumpStrength.get();
 
-    if (strength === 0 && !isPointerDown && animatedDialogStrength === 0 && animatedTileStrength === 0) {
+    if (strength === 0 && !isPointerDown && animatedDialogStrength === 0 && animatedTileStrength === 0 && !rippleRef.current?.active) {
       if (vertices.every((v, i) => v === originalPositions.current![i])) return;
       
       for (let i = 0; i < vertices.length; i++) {
@@ -88,12 +124,6 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
       meshRef.current.geometry.computeVertexNormals();
       return;
     };
-
-    const sdfRoundedBox = (p: THREE.Vector2, b: THREE.Vector2, r: number) => {
-      const qx = Math.abs(p.x) - b.x + r;
-      const qy = Math.abs(p.y) - b.y + r;
-      return Math.min(Math.max(qx, qy), 0.0) + new THREE.Vector2(Math.max(qx, 0.0), Math.max(qy, 0.0)).length() - r;
-    }
 
     for (let i = 0; i < vertices.length; i += 3) {
       const x = originalPositions.current![i];
@@ -107,6 +137,37 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
       const mouseEase = 0.5 * (1 + Math.cos(Math.PI * Math.min(mouseDistance / radius, 1)));
       let zDisplacement = isPointerDown ? strength * mouseEase * -1.5 : 0;
       
+      if (rippleRef.current?.active) {
+        const { startTime, rect, isOpening } = rippleRef.current;
+        const elapsedTime = clock.getElapsedTime() - startTime;
+        
+        if (rect) {
+          const speed = 5;
+          const amplitude = 0.4;
+          const rippleWidth = 1.5;
+          const signedAmplitude = isOpening ? -amplitude : amplitude;
+          
+          const sdfDist = sdfRoundedBox(
+            new THREE.Vector2(x, y), 
+            new THREE.Vector2(rect.width / 2, rect.height / 2), 
+            rect.cornerRadius
+          );
+
+          const rippleDist = elapsedTime * speed;
+          const distFromRipple = Math.abs(sdfDist - rippleDist);
+          
+          if (distFromRipple < rippleWidth / 2) {
+            const rippleFactor = Math.cos((distFromRipple / (rippleWidth / 2)) * (Math.PI / 2));
+            const decay = Math.max(0, 1 - (elapsedTime / 2.0));
+            zDisplacement += rippleFactor * signedAmplitude * decay;
+          }
+        }
+      
+        if (elapsedTime > 2.0) {
+          rippleRef.current = null;
+        }
+      }
+
       if (dialogRect && animatedDialogStrength !== 0) {
         const rectHalfWidth = dialogRect.width / 2;
         const rectHalfHeight = dialogRect.height / 2;
@@ -128,12 +189,6 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
         const halfHeight = warpTileRect.height / 2;
         const radius = warpTileRect.cornerRadius;
 
-        const sdfRoundedBox = (p, b, r) => {
-          const qx = Math.abs(p.x) - b.x + r;
-          const qy = Math.abs(p.y) - b.y + r;
-          return Math.min(Math.max(qx, qy), 0.0) + new THREE.Vector2(Math.max(qx, 0.0), Math.max(qy, 0.0)).length() - r;
-        }
-        
         const dist = sdfRoundedBox(
           new THREE.Vector2(x, y), 
           new THREE.Vector2(halfWidth, halfHeight), 
@@ -268,6 +323,7 @@ const GridCanvas = () => {
     setActiveWarp(data);
     setDialogOpen(false);
     setWarpToEdit(null);
+    setDialogSize(null);
   };
 
   const handleStartEdit = () => {
@@ -281,6 +337,7 @@ const GridCanvas = () => {
     setActiveWarp(null);
     setDialogOpen(false);
     setWarpToEdit(null);
+    setDialogSize(null);
   }
 
   const handleCloseDialog = () => {

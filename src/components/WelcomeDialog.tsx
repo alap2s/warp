@@ -19,7 +19,10 @@ export const WelcomeDialog = ({
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={isModal}>
       <div className="flex items-start justify-between">
-        <h2 className="text-5xl font-black leading-none text-white">The Warp</h2>
+        <div className="font-title text-5xl font-black leading-none text-white">
+          <p>The</p>
+          <p>Warp</p>
+        </div>
         <Button variant="default" size="icon" onClick={onNext}>
           <ArrowRight className="h-4 w-4" strokeWidth={2} />
         </Button>

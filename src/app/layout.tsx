@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Anonymous_Pro } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -7,6 +7,11 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
+const anonymousPro = Anonymous_Pro({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-anonymous-pro',
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -20,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>{children}</body>
+      <body className={`${inter.variable} ${anonymousPro.variable} font-sans antialiased`}>{children}</body>
     </html>
   );
 }

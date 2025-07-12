@@ -41,7 +41,7 @@ export const ProfileDialog = ({
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={isModal}>
       <div className="flex items-start justify-between">
-        <div className="font-black text-5xl leading-none text-white">
+        <div className="font-title font-black text-5xl leading-none text-white">
           <p>Be</p>
           <p>You</p>
         </div>

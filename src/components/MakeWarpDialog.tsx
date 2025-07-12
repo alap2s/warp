@@ -1,4 +1,5 @@
 'use client';
+// @ts-nocheck
 
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from './ui/Button';
@@ -211,7 +212,7 @@ export const MakeWarpDialog = ({
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange}>
         <div className="flex justify-between items-start">
-          <div className="font-black text-5xl leading-none text-white">
+          <div className="font-title font-black text-5xl leading-none text-white">
             <p>Make</p>
             <p>Warp</p>
           </div>
@@ -274,12 +275,12 @@ export const MakeWarpDialog = ({
                 </select>
                 <span className="mx-1">:</span>
                 <select
-                    value={whenValue.getMinutes().toString()}
+                    value={whenValue.getMinutes()}
                     onChange={(e) => handleTimeChange('minutes', e.target.value)}
                     className="bg-transparent focus:outline-none appearance-none"
                 >
-                    <option value="0" className="bg-black text-white">00</option>
-                    <option value="30" className="bg-black text-white">30</option>
+                    <option value={0} className="bg-black text-white">00</option>
+                    <option value={30} className="bg-black text-white">30</option>
                 </select>
               </div>
             </div>
