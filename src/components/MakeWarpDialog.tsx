@@ -1,5 +1,4 @@
 'use client';
-// @ts-nocheck
 
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from './ui/Button';
@@ -8,11 +7,17 @@ import {
   X, Check, Clock, MapPin, LineSquiggle, Coffee, MessageSquare, Code, Plane,
   Book, Mic, Film, Music, ShoppingCart, Utensils, Beer, Dumbbell, Sun, Moon,
   Wine, Sofa, Tv2, Home, PartyPopper, Palette, CakeSlice, CupSoda, Trophy,
-  Gamepad2, Bike, HeartPulse, Swords, Play, Sailboat, Ship, Dices, Trash2, Share
+  Gamepad2, Bike, HeartPulse, Swords, Play, Sailboat, Ship, Dices, Trash2, Share, Tag, Link2
 } from 'lucide-react';
 import Dialog from './ui/Dialog';
 
-const iconMap: { [key: string]: React.ElementType } = {
+interface IconProps {
+  className?: string;
+  strokeWidth?: number;
+  size?: number;
+}
+
+const iconMap: { [key: string]: React.ComponentType<IconProps> } = {
   // Existing items
   'coffee': Coffee,
   'tea': Coffee,
@@ -70,9 +75,13 @@ const iconMap: { [key: string]: React.ElementType } = {
   'sail': Sailboat,
   'ship': Ship,
   'dice': Dices,
+  'person': Tag,
+  'place': Tag,
+  'thing': Tag,
+  'link': Link2,
 };
 
-export const getIcon = (text: string): React.ElementType => {
+export const getIcon = (text: string): React.ComponentType<IconProps> => {
   const words = text.toLowerCase().split(/[\s,.]+/); // split by space, comma, or period
   for (const word of words) {
     if (iconMap[word]) {
@@ -128,7 +137,7 @@ export type FormData = {
   what: string;
   when: Date;
   where: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<IconProps>;
 };
 
 export const MakeWarpDialog = ({
@@ -148,7 +157,7 @@ export const MakeWarpDialog = ({
   const [whatValue, setWhatValue] = useState<string>(initialData?.what || '');
   const [whenValue, setWhenValue] = useState<Date>(initialData?.when ? new Date(initialData.when) : getInitialWhenDate());
   const [whereValue, setWhereValue] = useState<string>(initialData?.where || '');
-  const [CurrentIcon, setCurrentIcon] = useState<React.ElementType>(() => initialData?.icon || LineSquiggle);
+  const [CurrentIcon, setCurrentIcon] = useState<React.ComponentType<IconProps>>(() => initialData?.icon || LineSquiggle);
 
   useEffect(() => {
     whatInputRef.current?.focus();

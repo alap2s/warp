@@ -1,27 +1,27 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
-import { Splide, SplideSlide, Options } from '@splidejs/react-splide';
+import React, { useMemo } from 'react';
+import { Splide, SplideSlide } from '@splidejs/react-splide';
 import { createAvatar } from '@dicebear/core';
 import { thumbs } from '@dicebear/collection';
+import type { Splide as SplideCore } from '@splidejs/splide';
 
 // It's important to import the Splide CSS
 import '@splidejs/react-splide/css';
 
 interface HorizontalPickerProps {
   onIconSelect: (seed: string) => void;
-  selectedIcon?: string;
 }
 
 const generateSeeds = (count: number) => {
   return Array.from({ length: count }, () => Math.random().toString(36).substring(7));
 };
 
-const HorizontalPicker = ({ onIconSelect, selectedIcon }: HorizontalPickerProps) => {
+const HorizontalPicker = ({ onIconSelect }: HorizontalPickerProps) => {
   // Memoize the seeds so they don't change on every render
   const avatarSeeds = useMemo(() => generateSeeds(20), []);
 
-  const splideOptions: Options = {
+  const splideOptions = {
     type: 'loop',
     perPage: 3,
     focus: 'center',
@@ -33,7 +33,7 @@ const HorizontalPicker = ({ onIconSelect, selectedIcon }: HorizontalPickerProps)
     height: '100px',
   };
 
-  const handleMoved = (splide: any) => {
+  const handleMoved = (splide: SplideCore) => {
     const activeSlide = splide.Components.Slides.getAt(splide.index);
     if (activeSlide && activeSlide.slide) {
       const seed = activeSlide.slide.getAttribute('data-seed');

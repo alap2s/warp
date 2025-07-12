@@ -1,9 +1,9 @@
 'use client';
 
-import { useRef, useState, useEffect, useMemo } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-import { X, Check, Tag } from 'lucide-react';
+import { Check, Tag } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import HorizontalPicker from './ui/HorizontalPicker';
 
@@ -55,7 +55,6 @@ export const ProfileDialog = ({
       <div className="mt-6 flex flex-col gap-6">
         <HorizontalPicker
           onIconSelect={handleIconSelect}
-          selectedIcon={selectedIconSeed}
         />
         <div className="relative">
           <Tag className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-white/60" strokeWidth={1.5} />

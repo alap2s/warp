@@ -1,9 +1,14 @@
 import React from 'react';
 import { useSpring, a } from '@react-spring/three';
-import { Text, Html } from '@react-three/drei';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 
-export const Ball = ({ position, date, icon: Icon }: { position: THREE.Vector3, date: Date, icon: React.ElementType }) => {
+interface IconProps {
+  className?: string;
+  strokeWidth?: number;
+}
+
+export const Ball = ({ position, icon: Icon }: { position: THREE.Vector3, icon: React.ComponentType<IconProps> }) => {
   const { y } = useSpring({ from: { y: 5 }, to: { y: 0.15 * 3 }, config: { mass: 2, tension: 200, friction: 25 }});
 
   return (

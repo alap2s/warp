@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useRef, useState, useMemo, useEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useSpring, Spring, motion, AnimatePresence } from 'framer-motion';
+import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
+import { useSpring, SpringValue } from '@react-spring/three';
+import { AnimatePresence } from 'framer-motion';
 import * as THREE from 'three';
 import { MakeWarpDialog, FormData } from './MakeWarpDialog';
 import WarpTile from './WarpTile';
@@ -14,29 +15,31 @@ const smoothstep = (min: number, max: number, value: number) => {
   return x * x * (3 - 2 * x);
 };
 
+type Rect = { width: number, height: number, cornerRadius: number };
+
 const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, warpTileRect }: { 
   isPointerDown: boolean, 
   pointerPos: THREE.Vector3, 
-  bumpStrength: Spring,
-  dialogRect: { width: number, height: number, cornerRadius: number } | null,
-  warpTileRect: { width: number, height: number, cornerRadius: number } | null
+  bumpStrength: SpringValue,
+  dialogRect: Rect | null,
+  warpTileRect: Rect | null
 }) => {
   const meshRef = useRef<THREE.Mesh>(null!);
   const { viewport } = useThree();
-  const rippleRef = useRef<{ active: boolean, startTime: number, rect: any, isOpening: boolean } | null>(null);
+  const rippleRef = useRef<{ active: boolean, startTime: number, rect: Rect, isOpening: boolean } | null>(null);
   const prevDialogRect = useRef(dialogRect);
   const prevWarpTileRect = useRef(warpTileRect);
   
-  const originalPositions = useRef<Float32Array>();
-  const dialogBumpStrength = useSpring(0, { stiffness: 150, damping: 50 });
-  const tileBumpStrength = useSpring(0, { stiffness: 150, damping: 50 });
+  const originalPositions = useRef<Float32Array | null>(null);
+  const { val: dialogBumpStrength } = useSpring({ val: 0 });
+  const { val: tileBumpStrength } = useSpring({ val: 0 });
 
   useEffect(() => {
-    dialogBumpStrength.set(dialogRect ? -1.2 : 0);
+    dialogBumpStrength.start(dialogRect ? -1.2 : 0);
   }, [dialogRect, dialogBumpStrength]);
 
   useEffect(() => {
-    tileBumpStrength.set(warpTileRect ? -0.8 : 0);
+    tileBumpStrength.start(warpTileRect ? -0.8 : 0);
   }, [warpTileRect, tileBumpStrength]);
 
   const texture = useMemo(() => {
@@ -86,20 +89,28 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
 
     if (!rippleRef.current?.active) {
       if (wasTile && !isTile && !wasDialog && isDialog) {
-        rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect: prevWarpTileRect.current, isOpening: true };
+        if (prevWarpTileRect.current) {
+          rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect: prevWarpTileRect.current, isOpening: true };
+        }
       }
       else if (wasDialog && !isDialog && !wasTile && isTile) {
-        rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect: prevDialogRect.current, isOpening: true };
+        if (prevDialogRect.current) {
+          rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect: prevDialogRect.current, isOpening: true };
+        }
       }
       else if (wasDialog !== isDialog) {
         const isOpening = isDialog;
         const rect = isOpening ? dialogRect : prevDialogRect.current;
-        rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect, isOpening };
+        if (rect) {
+          rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect, isOpening };
+        }
       }
       else if (wasTile !== isTile) {
         const isOpening = isTile;
         const rect = isOpening ? warpTileRect : prevWarpTileRect.current;
-        rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect, isOpening };
+        if (rect) {
+          rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect, isOpening };
+        }
       }
     }
 
@@ -225,38 +236,38 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
 };
 
 const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect }: { 
-  onPointerUp: (e: any) => void, 
-  dialogRect: { width: number, height: number } | null,
-  warpTileRect: { width: number, height: number, cornerRadius: number } | null 
+  onPointerUp: (e: ThreeEvent<PointerEvent>) => void, 
+  dialogRect: Rect | null,
+  warpTileRect: Rect | null 
 }) => {
   const [isPointerDown, setPointerDown] = useState(false);
   const pointerPos = useRef(new THREE.Vector3());
-  const bumpStrength = useSpring(0, { stiffness: 150, damping: 50 });
+  const { val: bumpStrength } = useSpring({ val: 0 });
   const { viewport } = useThree();
 
-  const handlePointerDown = (e: any) => {
+  const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     setPointerDown(true);
     pointerPos.current = e.point;
-    bumpStrength.set(1);
+    bumpStrength.start(1);
   };
 
-  const handlePointerUp = (e: any) => {
+  const handlePointerUp = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
     if (isPointerDown) {
       setPointerDown(false);
-      bumpStrength.set(0);
+      bumpStrength.start(0);
       onPointerUp(e);
     }
   };
   
-  const handlePointerMove = (e: any) => {
+  const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (isPointerDown || e.buttons === 1) {
       e.stopPropagation();
       pointerPos.current = e.point;
       if (!isPointerDown) {
         setPointerDown(true);
-        bumpStrength.set(1);
+        bumpStrength.start(1);
       }
     }
   };
@@ -287,10 +298,15 @@ const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect }: {
   );
 };
 
-const ViewportReporter = ({ onViewportChange }: { onViewportChange: (viewport: any, size: any) => void }) => {
+type ViewportInfo = {
+  viewport: { width: number; height: number; factor: number; distance: number; },
+  size: { width: number, height: number, top: number, left: number }
+}
+
+const ViewportReporter = ({ onViewportChange }: { onViewportChange: (viewportInfo: ViewportInfo) => void }) => {
   const { viewport, size } = useThree();
   useEffect(() => {
-    onViewportChange(viewport, size);
+    onViewportChange({viewport, size});
   }, [viewport, size, onViewportChange]);
   return null;
 }
@@ -301,7 +317,7 @@ const GridCanvas = () => {
   const [onboardingStep, setOnboardingStep] = useState<'welcome' | 'profile' | 'complete'>('complete');
   const [activeWarp, setActiveWarp] = useState<FormData | null>(null);
   const [warpToEdit, setWarpToEdit] = useState<FormData | null>(null);
-  const [viewportInfo, setViewportInfo] = useState<{ viewport: any, size: any } | null>(null);
+  const [viewportInfo, setViewportInfo] = useState<ViewportInfo | null>(null);
   const [dialogSize, setDialogSize] = useState<{ width: number, height: number } | null>(null);
 
   useEffect(() => {
@@ -382,7 +398,6 @@ const GridCanvas = () => {
     const { viewport, size } = viewportInfo;
     const tileWidthPx = 84;
     const tileHeightPx = 84;
-    const tileCornerRadiusPx = 24;
 
     const tileWorldWidth = (tileWidthPx / size.width) * viewport.width;
     const tileWorldHeight = (tileHeightPx / size.height) * viewport.height;
@@ -394,7 +409,7 @@ const GridCanvas = () => {
   return (
     <div className="w-screen h-screen bg-black">
        <Canvas camera={{ position: [0, 10, 0.1], fov: 50 }}>
-        <ViewportReporter onViewportChange={(viewport, size) => setViewportInfo({ viewport, size })} />
+        <ViewportReporter onViewportChange={setViewportInfo} />
         <InteractiveGrid 
           onPointerUp={handleGridClick} 
           dialogRect={dialogRect}
