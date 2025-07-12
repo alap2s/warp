@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { MakeWarpDialog, FormData } from './MakeWarpDialog';
 import WarpTile from './WarpTile';
 import ProfileDialog from './ProfileDialog';
+import WelcomeDialog from './WelcomeDialog';
 
 const smoothstep = (min: number, max: number, value: number) => {
   const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
@@ -241,8 +242,8 @@ const ViewportReporter = ({ onViewportChange }: { onViewportChange: (viewport: a
 
 const GridCanvas = () => {
   const [isDialogOpen, setDialogOpen] = useState(false);
-  const [isProfileDialogOpen, setProfileDialogOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{ username: string; icon: string } | null>(null);
+  const [onboardingStep, setOnboardingStep] = useState<'welcome' | 'profile' | 'complete'>('complete');
   const [activeWarp, setActiveWarp] = useState<FormData | null>(null);
   const [warpToEdit, setWarpToEdit] = useState<FormData | null>(null);
   const [viewportInfo, setViewportInfo] = useState<{ viewport: any, size: any } | null>(null);
@@ -252,8 +253,9 @@ const GridCanvas = () => {
     const profile = localStorage.getItem('userProfile');
     if (profile) {
       setUserProfile(JSON.parse(profile));
+      setOnboardingStep('complete');
     } else {
-      setProfileDialogOpen(true);
+      setOnboardingStep('welcome');
     }
   }, []);
 
@@ -293,9 +295,14 @@ const GridCanvas = () => {
   const handleSaveProfile = (data: { username: string; icon: string }) => {
     localStorage.setItem('userProfile', JSON.stringify(data));
     setUserProfile(data);
-    setProfileDialogOpen(false);
+    setOnboardingStep('complete');
     setDialogSize(null);
   };
+
+  const handleCloseOnboarding = () => {
+    setOnboardingStep('complete');
+    setDialogSize(null);
+  }
 
   const dialogRect = useMemo(() => {
     if (!dialogSize || !viewportInfo) return null;
@@ -350,15 +357,21 @@ const GridCanvas = () => {
         )}
       </AnimatePresence>
       {activeWarp && <WarpTile warp={activeWarp} onRemove={handleStartEdit} />}
-      {isProfileDialogOpen && (
+      {onboardingStep === 'welcome' && (
+        <WelcomeDialog
+          onNext={() => setOnboardingStep('profile')}
+          onClose={handleCloseOnboarding}
+          onSizeChange={setDialogSize}
+          isModal={true}
+        />
+      )}
+      {onboardingStep === 'profile' && (
         <ProfileDialog
           initialData={userProfile}
           onSave={handleSaveProfile}
-          onClose={() => {
-            setProfileDialogOpen(false)
-            setDialogSize(null);
-          }}
+          onClose={handleCloseOnboarding}
           onSizeChange={setDialogSize}
+          isModal={true}
         />
       )}
     </div>

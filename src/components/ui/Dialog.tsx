@@ -2,10 +2,11 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
-const Dialog = ({ children, onClose, onSizeChange }: { 
+const Dialog = ({ children, onClose, onSizeChange, isModal = false }: { 
   children: React.ReactNode, 
   onClose: () => void,
   onSizeChange?: (size: { width: number, height: number }) => void,
+  isModal?: boolean,
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -23,10 +24,16 @@ const Dialog = ({ children, onClose, onSizeChange }: {
     }
   }, [onSizeChange]);
 
+  const handleOverlayClick = () => {
+    if (!isModal) {
+      onClose();
+    }
+  };
+
   return (
     <motion.div 
-      className="fixed inset-0 bg-transparent z-50 flex items-center justify-center"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-transparent"
+      onClick={handleOverlayClick}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

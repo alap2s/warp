@@ -1,8 +1,8 @@
 'use client';
 
 import { useRef, useState, useEffect, useMemo } from 'react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
 import { X, Check, Tag } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import HorizontalPicker from './ui/HorizontalPicker';
@@ -12,11 +12,13 @@ export const ProfileDialog = ({
   onSave,
   onClose,
   onSizeChange,
+  isModal,
 }: {
   initialData: { username: string; icon: string } | null;
   onSave: (data: { username:string; icon: string }) => void;
   onClose: () => void;
   onSizeChange?: (size: { width: number, height: number }) => void;
+  isModal?: boolean;
 }) => {
   const usernameInputRef = useRef<HTMLInputElement>(null);
   const [username, setUsername] = useState(initialData?.username || '');
@@ -37,7 +39,7 @@ export const ProfileDialog = ({
   };
 
   return (
-    <Dialog onClose={onClose} onSizeChange={onSizeChange}>
+    <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={isModal}>
       <div className="flex items-start justify-between">
         <div className="font-black text-5xl leading-none text-white">
           <p>Be</p>
