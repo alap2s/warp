@@ -14,7 +14,7 @@ const anonymousPro = Anonymous_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "Dots",
+  title: "Warp",
   description: "A web application by Alap Shah",
   manifest: "/manifest.json",
   icons: {
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Dots",
+    title: "Warp",
   },
   other: {
     "mobile-web-app-capable": "yes",
