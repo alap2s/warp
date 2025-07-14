@@ -160,8 +160,6 @@ export const MakeWarpDialog = ({
   const [CurrentIcon, setCurrentIcon] = useState<React.ComponentType<IconProps>>(() => initialData?.icon || LineSquiggle);
 
   useEffect(() => {
-    whatInputRef.current?.focus();
-
     if (!initialData) {
       setWhereValue('Fetching location...');
       if (navigator.geolocation) {
