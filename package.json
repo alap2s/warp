@@ -12,6 +12,7 @@
   "dependencies": {
     "@dicebear/collection": "^9.2.3",
     "@dicebear/core": "^9.2.3",
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@react-spring/three": "^10.0.1",
     "@react-three/drei": "^10.4.2",
     "@react-three/fiber": "^9.2.0",
