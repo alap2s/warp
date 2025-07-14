@@ -23,7 +23,7 @@ const formatTileDate = (date: Date) => {
   return `${month}/${day}`;
 };
 
-const WarpTile = ({ warp, onRemove }: { warp: FormData, onRemove: () => void }) => {
+const WarpTile = ({ warp, username, onRemove }: { warp: FormData, username: string, onRemove: () => void }) => {
   const { what, when } = warp;
   const Icon = getIcon(what);
   const dateLabel = formatTileDate(when);
@@ -44,7 +44,7 @@ const WarpTile = ({ warp, onRemove }: { warp: FormData, onRemove: () => void }) 
           {Icon && <Icon size={20} />}
         </div>
         <div className="flex flex-col items-center text-center">
-          <p className="text-white text-xs font-medium truncate w-full">{what.split(' ')[0]}</p>
+          <p className="text-white text-xs font-medium truncate w-full">{username}</p>
           <p className="text-white/70 text-[10px] font-light">{dateLabel}</p>
         </div>
       </div>

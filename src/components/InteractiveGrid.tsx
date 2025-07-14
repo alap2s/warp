@@ -428,7 +428,7 @@ const GridCanvas = () => {
           />
         )}
       </AnimatePresence>
-      {activeWarp && <WarpTile warp={activeWarp} onRemove={handleStartEdit} />}
+      {activeWarp && userProfile && <WarpTile warp={activeWarp} username={userProfile.username} onRemove={handleStartEdit} />}
       {onboardingStep === 'welcome' && (
         <WelcomeDialog
           onNext={() => setOnboardingStep('profile')}

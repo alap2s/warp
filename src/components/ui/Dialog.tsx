@@ -1,5 +1,5 @@
 
-import React, { useLayoutEffect, useRef, useEffect } from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
 const Dialog = ({ children, onClose, onSizeChange, isModal = false }: { 
@@ -9,13 +9,6 @@ const Dialog = ({ children, onClose, onSizeChange, isModal = false }: {
   isModal?: boolean,
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
 
   useLayoutEffect(() => {
     if (dialogRef.current && onSizeChange) {

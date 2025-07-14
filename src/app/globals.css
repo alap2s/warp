@@ -12,6 +12,14 @@
   }
 }
 
+html,
+body {
+  overflow: hidden;
+  height: 100%;
+  position: fixed; /* Prevent scrolling on mobile */
+  width: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

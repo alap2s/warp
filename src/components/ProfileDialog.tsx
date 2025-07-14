@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Check, Tag } from 'lucide-react';
@@ -23,10 +23,6 @@ export const ProfileDialog = ({
   const usernameInputRef = useRef<HTMLInputElement>(null);
   const [username, setUsername] = useState(initialData?.username || '');
   const [selectedIconSeed, setSelectedIconSeed] = useState<string>(initialData?.icon || 'adrian');
-
-  useEffect(() => {
-    usernameInputRef.current?.focus();
-  }, []);
 
   const handleSave = () => {
     if (username.trim()) {
@@ -61,7 +57,7 @@ export const ProfileDialog = ({
           <Input
             ref={usernameInputRef}
             type="text"
-            placeholder="Name"
+            placeholder="Your name"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             className="pl-10"
