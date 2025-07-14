@@ -9,6 +9,7 @@ import { MakeWarpDialog, FormData } from './MakeWarpDialog';
 import WarpTile from './WarpTile';
 import ProfileDialog from './ProfileDialog';
 import WelcomeDialog from './WelcomeDialog';
+import DebugControls from './ui/DebugControls';
 
 const smoothstep = (min: number, max: number, value: number) => {
   const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
@@ -17,12 +18,19 @@ const smoothstep = (min: number, max: number, value: number) => {
 
 type Rect = { width: number, height: number, cornerRadius: number };
 
-const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, warpTileRect }: { 
+interface DialogBumpConfig {
+  dialogBumpStrength: number;
+  dialogEdgeSoftness: number;
+  dialogBumpScale: number;
+}
+
+const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, warpTileRect, dialogBumpConfig }: { 
   isPointerDown: boolean, 
   pointerPos: THREE.Vector3, 
   bumpStrength: SpringValue,
   dialogRect: Rect | null,
-  warpTileRect: Rect | null
+  warpTileRect: Rect | null,
+  dialogBumpConfig: DialogBumpConfig,
 }) => {
   const meshRef = useRef<THREE.Mesh>(null!);
   const { viewport } = useThree();
@@ -35,8 +43,8 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   const { val: tileBumpStrength } = useSpring({ val: 0 });
 
   useEffect(() => {
-    dialogBumpStrength.start(dialogRect ? -1.2 : 0);
-  }, [dialogRect, dialogBumpStrength]);
+    dialogBumpStrength.start(dialogRect ? dialogBumpConfig.dialogBumpStrength : 0);
+  }, [dialogRect, dialogBumpStrength, dialogBumpConfig.dialogBumpStrength]);
 
   useEffect(() => {
     tileBumpStrength.start(warpTileRect ? -0.8 : 0);
@@ -190,7 +198,7 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
           cornerRadius
         );
         
-        const edgeSoftness = 0.5;
+        const edgeSoftness = dialogBumpConfig.dialogEdgeSoftness;
         const factor = 1.0 - smoothstep(0, edgeSoftness, dist);
         zDisplacement += animatedDialogStrength * factor;
       }
@@ -235,10 +243,11 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   );
 };
 
-const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect }: { 
+const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect, dialogBumpConfig }: { 
   onPointerUp: (e: ThreeEvent<PointerEvent>) => void, 
   dialogRect: Rect | null,
-  warpTileRect: Rect | null 
+  warpTileRect: Rect | null,
+  dialogBumpConfig: DialogBumpConfig,
 }) => {
   const [isPointerDown, setPointerDown] = useState(false);
   const pointerPos = useRef(new THREE.Vector3());
@@ -282,6 +291,7 @@ const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect }: {
         bumpStrength={bumpStrength}
         dialogRect={dialogRect}
         warpTileRect={warpTileRect}
+        dialogBumpConfig={dialogBumpConfig}
       />
       <mesh
         position={[0, -1, 0]}
@@ -311,6 +321,18 @@ const ViewportReporter = ({ onViewportChange }: { onViewportChange: (viewportInf
   return null;
 }
 
+const SETTING_A: DialogBumpConfig = {
+  dialogBumpStrength: -1.2,
+  dialogEdgeSoftness: 0.6,
+  dialogBumpScale: 1.0,
+};
+
+const SETTING_B: DialogBumpConfig = {
+  dialogBumpStrength: -0.5,
+  dialogEdgeSoftness: 0.1,
+  dialogBumpScale: 1.3,
+};
+
 const GridCanvas = () => {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [userProfile, setUserProfile] = useState<{ username: string; icon: string } | null>(null);
@@ -319,6 +341,7 @@ const GridCanvas = () => {
   const [warpToEdit, setWarpToEdit] = useState<FormData | null>(null);
   const [viewportInfo, setViewportInfo] = useState<ViewportInfo | null>(null);
   const [dialogSize, setDialogSize] = useState<{ width: number, height: number } | null>(null);
+  const [dialogBumpConfig, setDialogBumpConfig] = useState<DialogBumpConfig>(SETTING_A);
 
   useEffect(() => {
     const profile = localStorage.getItem('userProfile');
@@ -329,6 +352,10 @@ const GridCanvas = () => {
       setOnboardingStep('welcome');
     }
   }, []);
+
+  const handleSettingSelect = (setting: 'A' | 'B') => {
+    setDialogBumpConfig(setting === 'A' ? SETTING_A : SETTING_B);
+  };
 
   const handleGridClick = () => {
     setWarpToEdit(null);
@@ -381,8 +408,8 @@ const GridCanvas = () => {
     if (!dialogSize || !viewportInfo) return null;
 
     const { viewport, size } = viewportInfo;
-    const dialogWidthPx = dialogSize.width * 1.2;
-    const dialogHeightPx = dialogSize.height * 1.2;
+    const dialogWidthPx = dialogSize.width;
+    const dialogHeightPx = dialogSize.height;
     const dialogCornerRadiusPx = 48;
 
     const dialogWorldWidth = (dialogWidthPx / size.width) * viewport.width;
@@ -391,6 +418,15 @@ const GridCanvas = () => {
     
     return { width: dialogWorldWidth, height: dialogWorldHeight, cornerRadius };
   }, [dialogSize, viewportInfo]);
+
+  const scaledDialogRect = useMemo(() => {
+    if (!dialogRect) return null;
+    return {
+      ...dialogRect,
+      width: dialogRect.width * dialogBumpConfig.dialogBumpScale,
+      height: dialogRect.height * dialogBumpConfig.dialogBumpScale,
+    };
+  }, [dialogRect, dialogBumpConfig.dialogBumpScale]);
 
   const warpTileRect = useMemo(() => {
     if (!activeWarp || !viewportInfo) return null;
@@ -407,15 +443,23 @@ const GridCanvas = () => {
   }, [activeWarp, viewportInfo]);
 
   return (
-    <div className="w-screen h-screen bg-black">
-       <Canvas camera={{ position: [0, 10, 0.1], fov: 50 }}>
-        <ViewportReporter onViewportChange={setViewportInfo} />
-        <InteractiveGrid 
-          onPointerUp={handleGridClick} 
-          dialogRect={dialogRect}
-          warpTileRect={warpTileRect}
-        />
-      </Canvas>
+    <div className="w-screen h-screen bg-black relative">
+      {false && <DebugControls 
+        values={dialogBumpConfig} 
+        onChange={setDialogBumpConfig}
+        onSettingSelect={handleSettingSelect}
+      />}
+      <div className="absolute inset-0 z-0">
+        <Canvas camera={{ position: [0, 10, 0.1], fov: 50 }}>
+          <ViewportReporter onViewportChange={setViewportInfo} />
+          <InteractiveGrid 
+            onPointerUp={handleGridClick} 
+            dialogRect={scaledDialogRect}
+            warpTileRect={warpTileRect}
+            dialogBumpConfig={dialogBumpConfig}
+          />
+        </Canvas>
+      </div>
       <AnimatePresence>
         {isDialogOpen && (
           <MakeWarpDialog

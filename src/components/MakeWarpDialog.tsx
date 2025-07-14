@@ -220,8 +220,7 @@ export const MakeWarpDialog = ({
     <Dialog onClose={onClose} onSizeChange={onSizeChange}>
         <div className="flex justify-between items-start">
           <div className="font-title font-black text-5xl leading-none text-white">
-            <p>Make</p>
-            <p>Warp</p>
+            {initialData ? <p>Edit</p> : <><p>Make</p><p>Warp</p></>}
           </div>
           <div className="flex gap-2">
             {onDelete && (
