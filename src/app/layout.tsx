@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description: "A web application by Alap Shah",
   manifest: "/manifest.json",
   icons: {
-    apple: "/icons/icon-192x192.png",
+    apple: "/icon-192.png",
   },
   appleWebApp: {
     capable: true,
