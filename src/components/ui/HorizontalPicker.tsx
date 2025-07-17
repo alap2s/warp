@@ -2,8 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { Splide, SplideSlide } from '@splidejs/react-splide';
-import { createAvatar } from '@dicebear/core';
-import { thumbs } from '@dicebear/collection';
+import Image from 'next/image';
 import type { Splide as SplideCore } from '@splidejs/splide';
 
 // It's important to import the Splide CSS
@@ -13,13 +12,14 @@ interface HorizontalPickerProps {
   onIconSelect: (seed: string) => void;
 }
 
-const generateSeeds = (count: number) => {
-  return Array.from({ length: count }, () => Math.random().toString(36).substring(7));
-};
-
 const HorizontalPicker = ({ onIconSelect }: HorizontalPickerProps) => {
-  // Memoize the seeds so they don't change on every render
-  const avatarSeeds = useMemo(() => generateSeeds(20), []);
+  const avatarSeeds = useMemo(() => [
+    'Thumb01.svg',
+    'Thumb02.svg',
+    'Thumb03.svg',
+    'Thumb04.svg',
+    'Thumb05.svg'
+  ], []);
 
   const splideOptions = {
     type: 'loop',
@@ -54,18 +54,14 @@ const HorizontalPicker = ({ onIconSelect }: HorizontalPickerProps) => {
           <SplideSlide key={seed} data-seed={seed}>
             <div
               className="flex items-center justify-center h-full splide__slide__container"
-              dangerouslySetInnerHTML={{
-                __html: createAvatar(thumbs, {
-                  seed: seed,
-                  scale: 80,
-                  radius: 20,
-                  backgroundColor: ['#00000000'], // Transparent
-                  eyesColor: ['1F1F1F'],
-                  mouthColor: ['1F1F1F'],
-                  shapeColor: ['ffffff'],
-                }).toString(),
-              }}
-            />
+            >
+              <Image
+                src={`/thumbs/${seed}`}
+                alt="Avatar"
+                width={80}
+                height={80}
+              />
+            </div>
           </SplideSlide>
         ))}
       </Splide>

@@ -29,7 +29,7 @@ export const WelcomeDialog = ({
       </div>
       <div className="mt-6">
         <p className="text-white/80">
-          Mark warp - let friends join in your reality.
+          To share your reality!
         </p>
       </div>
     </Dialog>
