@@ -44,7 +44,7 @@ const HorizontalPicker = ({ onIconSelect }: HorizontalPickerProps) => {
   };
 
   return (
-    <div className="w-[272px]">
+    <div>
       <Splide
         options={splideOptions}
         onMoved={handleMoved}
@@ -55,14 +55,13 @@ const HorizontalPicker = ({ onIconSelect }: HorizontalPickerProps) => {
             <div
               className="flex items-center justify-center h-full splide__slide__container"
             >
-              <div className="border-2 border-transparent rounded-[36px] p-1">
-                <Image
-                  src={`/thumbs/${seed}`}
-                  alt="Avatar"
-                  width={80}
-                  height={80}
-                />
-              </div>
+              <Image
+                src={`/thumbs/${seed}`}
+                alt="Avatar"
+                width={80}
+                height={80}
+                className="avatar-image"
+              />
             </div>
           </SplideSlide>
         ))}
@@ -77,8 +76,9 @@ const HorizontalPicker = ({ onIconSelect }: HorizontalPickerProps) => {
           opacity: 1;
           transform: scale(1);
         }
-        .splide__slide.is-active .border-transparent {
-          border-color: white;
+        .splide__slide.is-active .avatar-image {
+          border: 2px solid white;
+          border-radius: 36px;
         }
       `}</style>
     </div>
