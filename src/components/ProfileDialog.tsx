@@ -49,9 +49,12 @@ export const ProfileDialog = ({
       </div>
 
       <div className="mt-6 flex flex-col gap-6">
-        <HorizontalPicker
-          onIconSelect={handleIconSelect}
-        />
+        <div className="flex flex-col items-center">
+          <HorizontalPicker
+            onIconSelect={handleIconSelect}
+          />
+          <p className="text-white/40 mt-2">Select your thumbavtar</p>
+        </div>
         <div className="relative">
           <Tag className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-white/60" strokeWidth={1.5} />
           <Input
