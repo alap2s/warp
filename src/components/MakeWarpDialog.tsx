@@ -219,26 +219,26 @@ export const MakeWarpDialog = ({
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange}>
         <div className="flex justify-between items-start">
-          <div className="font-title font-black text-5xl leading-none text-white">
+          <div className="dialog-title">
             {initialData ? <p>Edit</p> : <><p>Make</p><p>Warp</p></>}
           </div>
           <div className="flex gap-2">
             {onDelete && (
               <Button variant="outline" size="icon" onClick={onDelete}>
-                <Trash2 className="h-4 w-4" strokeWidth={2} />
+                <Trash2 size={16} strokeWidth={2.25} />
               </Button>
             )}
             {initialData ? (
               <Button variant="outline" size="icon" onClick={() => console.log('Share clicked')}>
-                <Share className="h-4 w-4" strokeWidth={2} />
+                <Share size={16} strokeWidth={2.25} />
               </Button>
             ) : (
               <Button variant="outline" size="icon" onClick={onClose}>
-                <X className="h-4 w-4" strokeWidth={2} />
+                <X size={16} strokeWidth={2.25} />
               </Button>
             )}
             <Button variant="default" size="icon" onClick={handlePost}>
-              <Check className="h-4 w-4" strokeWidth={2} />
+              <Check size={16} strokeWidth={2.25} />
             </Button>
           </div>
         </div>
@@ -251,12 +251,12 @@ export const MakeWarpDialog = ({
             value={whatValue}
             onChange={(e) => setWhatValue(e.target.value)}
           />
-          <CurrentIcon className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${whatValue ? 'text-white' : 'text-gray-400'}`} strokeWidth={2} />
+          <CurrentIcon className={`absolute left-3 top-1/2 -translate-y-1/2 ${whatValue ? 'text-white' : 'text-gray-400'}`} size={16} strokeWidth={2.25} />
         </div>
 
         <div className="relative">
           <div className="flex items-center w-full h-12 rounded-lg border border-transparent bg-[#2D2D2D] px-3 text-base font-medium text-white">
-            <Clock className="h-5 w-5 text-white" strokeWidth={2} />
+            <Clock className="text-white" size={16} strokeWidth={2.25} />
             <div className="flex-grow flex items-center justify-between pl-2">
               <select
                   value={formatDateForSelect(whenValue)}
@@ -300,7 +300,7 @@ export const MakeWarpDialog = ({
             onChange={(e) => setWhereValue(e.target.value)}
             className="pl-10"
           />
-          <MapPin className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${whereValue && whereValue !== 'Fetching location...' ? 'text-white' : 'text-gray-400'}`} strokeWidth={2} />
+          <MapPin className={`absolute left-3 top-1/2 -translate-y-1/2 ${whereValue && whereValue !== 'Fetching location...' ? 'text-white' : 'text-gray-400'}`} size={16} strokeWidth={2.25} />
         </div>
     </Dialog>
   );

@@ -37,13 +37,13 @@ export const ProfileDialog = ({
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={isModal}>
       <div className="flex items-start justify-between">
-        <div className="font-title font-black text-5xl leading-none text-white">
+        <div className="dialog-title">
           <p>Be</p>
           <p>You</p>
         </div>
         <div className="flex gap-2">
           <Button variant="default" size="icon" onClick={handleSave}>
-            <Check className="h-4 w-4" strokeWidth={2} />
+            <Check size={16} strokeWidth={2.25} />
           </Button>
         </div>
       </div>
@@ -56,7 +56,7 @@ export const ProfileDialog = ({
           <p className="text-white/40 mt-2">Select your thumbavtar</p>
         </div>
         <div className="relative">
-          <Tag className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-white/60" strokeWidth={1.5} />
+          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" size={16} strokeWidth={2.25} />
           <Input
             ref={usernameInputRef}
             type="text"

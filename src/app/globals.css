@@ -29,3 +29,13 @@ body {
 .font-title {
   font-family: var(--font-anonymous-pro);
 }
+
+.dialog-title {
+  font-family: var(--font-anonymous-pro);
+  @apply font-normal text-[60px] leading-none text-white;
+  letter-spacing: -0.12em;
+}
+
+.dialog-title p:not(:first-child) {
+  margin-top: -8px;
+}
