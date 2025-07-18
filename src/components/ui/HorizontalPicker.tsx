@@ -56,7 +56,7 @@ const HorizontalPicker = ({ onIconSelect }: HorizontalPickerProps) => {
               className="flex items-center justify-center h-full splide__slide__container"
             >
               <Image
-                src={`/thumbs/${seed}`}
+                src={`/Thumbs/${seed}`}
                 alt="Avatar"
                 width={80}
                 height={80}
