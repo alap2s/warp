@@ -78,7 +78,7 @@ const HorizontalPicker = ({ onIconSelect }: HorizontalPickerProps) => {
         }
         .splide__slide.is-active .avatar-image {
           border: 2px solid white;
-          border-radius: 36px;
+          border-radius: 18px;
         }
       `}</style>
     </div>
