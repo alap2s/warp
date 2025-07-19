@@ -48,12 +48,13 @@ export const ProfileDialog = ({
         </div>
       </div>
 
-      <div className="mt-6 flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
         <div className="flex flex-col items-center">
           <HorizontalPicker
             onIconSelect={handleIconSelect}
+            defaultValue={initialData?.icon}
           />
-          <p className="text-white/40 mt-2">Select your thumbavtar</p>
+          <p className="text-xs font-medium text-white/40 mt-1">Choose your thumbavatar</p>
         </div>
         <div className="relative">
           <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" size={16} strokeWidth={2.25} />

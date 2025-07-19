@@ -40,7 +40,7 @@ const Dialog = ({ children, onClose, onSizeChange, isModal = false }: {
     >
       <motion.div 
         ref={dialogRef}
-        className="bg-black rounded-2xl shadow-xl w-[300px] sm:w-[340px] p-4 flex flex-col gap-3 border-2 border-[#555]"
+        className="bg-[#111111] rounded-2xl shadow-xl w-[300px] sm:w-[340px] p-4 flex flex-col gap-3 border-2 border-[#555]"
         onClick={(e) => e.stopPropagation()}
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

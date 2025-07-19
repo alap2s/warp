@@ -10,16 +10,19 @@ import '@splidejs/react-splide/css';
 
 interface HorizontalPickerProps {
   onIconSelect: (seed: string) => void;
+  defaultValue?: string;
 }
 
-const HorizontalPicker = ({ onIconSelect }: HorizontalPickerProps) => {
+const HorizontalPicker = ({ onIconSelect, defaultValue }: HorizontalPickerProps) => {
   const avatarSeeds = useMemo(() => [
-    'Thumb01.svg',
-    'Thumb02.svg',
-    'Thumb03.svg',
-    'Thumb04.svg',
-    'Thumb05.svg'
+    'Thumbs01.svg',
+    'Thumbs02.svg',
+    'Thumbs03.svg',
+    'Thumbs04.svg',
+    'Thumbs05.svg'
   ], []);
+
+  const initialIndex = defaultValue ? avatarSeeds.indexOf(defaultValue) : 0;
 
   const splideOptions = {
     type: 'loop',
@@ -30,7 +33,8 @@ const HorizontalPicker = ({ onIconSelect }: HorizontalPickerProps) => {
     gap: '1rem',
     drag: 'free',
     snap: true,
-    height: '100px',
+    height: '120px',
+    start: initialIndex,
   };
 
   const handleMoved = (splide: SplideCore) => {
@@ -44,10 +48,11 @@ const HorizontalPicker = ({ onIconSelect }: HorizontalPickerProps) => {
   };
 
   return (
-    <div>
+    <div style={{ overflow: 'hidden' }}>
       <Splide
         options={splideOptions}
         onMoved={handleMoved}
+        onMounted={(splide: SplideCore) => splide.refresh()}
         aria-label="Avatar Picker"
       >
         {avatarSeeds.map((seed) => (
@@ -77,8 +82,12 @@ const HorizontalPicker = ({ onIconSelect }: HorizontalPickerProps) => {
           transform: scale(1);
         }
         .splide__slide.is-active .avatar-image {
-          border: 2px solid white;
-          border-radius: 18px;
+          filter: drop-shadow(0px 0px 0.5px white) drop-shadow(0px 0px 0.5px white) drop-shadow(0px 0px 0.5px white);
+        }
+        .splide__slide__container {
+          background-color: transparent;
+        }
+        .splide__track {
         }
       `}</style>
     </div>
