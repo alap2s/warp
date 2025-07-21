@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Button } from './ui/Button';
+import { IconButton } from './ui/IconButton';
 import { Input } from './ui/Input';
 import { Check, Tag } from 'lucide-react';
 import Dialog from './ui/Dialog';
@@ -22,7 +22,7 @@ export const ProfileDialog = ({
 }) => {
   const usernameInputRef = useRef<HTMLInputElement>(null);
   const [username, setUsername] = useState(initialData?.username || '');
-  const [selectedIconSeed, setSelectedIconSeed] = useState<string>(initialData?.icon || 'adrian');
+  const [selectedIconSeed, setSelectedIconSeed] = useState<string>(initialData?.icon || 'Thumbs01.svg');
 
   const handleSave = () => {
     if (username.trim()) {
@@ -42,9 +42,9 @@ export const ProfileDialog = ({
           <p>You</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="default" size="icon" onClick={handleSave}>
+          <IconButton variant="default" size="icon" onClick={handleSave}>
             <Check size={16} strokeWidth={2.25} />
-          </Button>
+          </IconButton>
         </div>
       </div>
 

@@ -1,12 +1,14 @@
+'use client';
 
 import React, { useLayoutEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
-const Dialog = ({ children, onClose, onSizeChange, isModal = false }: { 
+const Dialog = ({ children, onClose, onSizeChange, isModal = false, zIndex = 50 }: { 
   children: React.ReactNode, 
   onClose: () => void,
   onSizeChange?: (size: { width: number, height: number }) => void,
   isModal?: boolean,
+  zIndex?: number,
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -32,7 +34,8 @@ const Dialog = ({ children, onClose, onSizeChange, isModal = false }: {
 
   return (
     <motion.div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-transparent"
+      className="fixed inset-0 flex items-center justify-center bg-transparent"
+      style={{ zIndex }}
       onClick={handleOverlayClick}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}

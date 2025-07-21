@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Button } from './ui/Button';
+import { IconButton } from './ui/IconButton';
 import { Input } from './ui/Input';
 import {
   X, Check, Clock, MapPin, LineSquiggle, Coffee, MessageSquare, Code, Plane,
@@ -224,22 +224,22 @@ export const MakeWarpDialog = ({
           </div>
           <div className="flex gap-2">
             {onDelete && (
-              <Button variant="outline" size="icon" onClick={onDelete}>
+              <IconButton variant="outline" size="icon" onClick={onDelete}>
                 <Trash2 size={16} strokeWidth={2.25} />
-              </Button>
+              </IconButton>
             )}
             {initialData ? (
-              <Button variant="outline" size="icon" onClick={() => console.log('Share clicked')}>
+              <IconButton variant="outline" size="icon" onClick={() => console.log('Share clicked')}>
                 <Share size={16} strokeWidth={2.25} />
-              </Button>
+              </IconButton>
             ) : (
-              <Button variant="outline" size="icon" onClick={onClose}>
+              <IconButton variant="outline" size="icon" onClick={onClose}>
                 <X size={16} strokeWidth={2.25} />
-              </Button>
+              </IconButton>
             )}
-            <Button variant="default" size="icon" onClick={handlePost}>
+            <IconButton variant="default" size="icon" onClick={handlePost}>
               <Check size={16} strokeWidth={2.25} />
-            </Button>
+            </IconButton>
           </div>
         </div>
 

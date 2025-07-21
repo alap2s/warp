@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button } from './ui/Button';
+import { IconButton } from './ui/IconButton';
 import { ArrowRight } from 'lucide-react';
 import Dialog from './ui/Dialog';
 
@@ -23,9 +23,11 @@ export const WelcomeDialog = ({
           <p>The</p>
           <p>Warp</p>
         </div>
-        <Button variant="default" size="icon" onClick={onNext}>
-          <ArrowRight size={16} strokeWidth={2.25} />
-        </Button>
+        <div className="flex justify-end mt-4">
+          <IconButton variant="default" size="icon" onClick={onNext}>
+            <ArrowRight size={16} strokeWidth={2.25} />
+          </IconButton>
+        </div>
       </div>
       <div className="mt-6">
         <p className="text-white/80">
