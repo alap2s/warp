@@ -5,6 +5,7 @@ import { IconButton } from './ui/IconButton';
 import { Check } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import HorizontalPicker from './ui/HorizontalPicker';
+import DialogHeader from './ui/DialogHeader';
 
 const UpdateAvatarDialog = ({
   defaultValue,
@@ -19,20 +20,15 @@ const UpdateAvatarDialog = ({
 
   return (
     <Dialog onClose={onClose} isModal={true} zIndex={60}>
-      <div className="flex flex-col gap-4">
-        <div className="flex items-start justify-between">
-          <div className="dialog-title">
-            <p>Update</p>
-            <p>Thumbavatar</p>
-          </div>
-          <IconButton
-            variant="default"
-            size="icon"
-            onClick={() => onSave(selectedIcon)}
-          >
-            <Check size={16} strokeWidth={2.25} />
-          </IconButton>
-        </div>
+      <DialogHeader title={['Update', 'Thumbavatar']}>
+        <IconButton
+          variant="default"
+          onClick={() => onSave(selectedIcon)}
+        >
+          <Check size={16} strokeWidth={2.25} />
+        </IconButton>
+      </DialogHeader>
+      <div className="mt-6">
         <HorizontalPicker
           onIconSelect={setSelectedIcon}
           defaultValue={defaultValue}

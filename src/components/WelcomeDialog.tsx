@@ -23,11 +23,9 @@ export const WelcomeDialog = ({
           <p>The</p>
           <p>Warp</p>
         </div>
-        <div className="flex justify-end mt-4">
-          <IconButton variant="default" size="icon" onClick={onNext}>
-            <ArrowRight size={16} strokeWidth={2.25} />
-          </IconButton>
-        </div>
+        <IconButton variant="default" onClick={onNext}>
+          <ArrowRight size={16} strokeWidth={2.25} />
+        </IconButton>
       </div>
       <div className="mt-6">
         <p className="text-white/80">

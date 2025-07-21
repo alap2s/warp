@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { IconButton } from './ui/IconButton';
 import { Input } from './ui/Input';
-import { Check, Tag } from 'lucide-react';
+import { Check, AtSign } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import HorizontalPicker from './ui/HorizontalPicker';
 
@@ -26,7 +26,7 @@ export const ProfileDialog = ({
 
   const handleSave = () => {
     if (username.trim()) {
-      onSave({ username, icon: selectedIconSeed });
+      onSave({ username: username.trim(), icon: selectedIconSeed });
     }
   };
 
@@ -42,7 +42,7 @@ export const ProfileDialog = ({
           <p>You</p>
         </div>
         <div className="flex gap-2">
-          <IconButton variant="default" size="icon" onClick={handleSave}>
+          <IconButton variant="default" onClick={handleSave}>
             <Check size={16} strokeWidth={2.25} />
           </IconButton>
         </div>
@@ -57,13 +57,17 @@ export const ProfileDialog = ({
           <p className="text-xs font-medium text-white/40 mt-1">Choose your thumbavatar</p>
         </div>
         <div className="relative">
-          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" size={16} strokeWidth={2.25} />
+          <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" size={16} strokeWidth={2.25} />
           <Input
             ref={usernameInputRef}
             type="text"
-            placeholder="Your name"
+            placeholder="Username"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => {
+              if (e.target.value.length <= 7) {
+                setUsername(e.target.value);
+              }
+            }}
             className="pl-10"
           />
         </div>

@@ -10,6 +10,7 @@ import {
   Gamepad2, Bike, HeartPulse, Swords, Play, Sailboat, Ship, Dices, Trash2, Share, Tag, Link2
 } from 'lucide-react';
 import Dialog from './ui/Dialog';
+import DialogHeader from './ui/DialogHeader';
 
 interface IconProps {
   className?: string;
@@ -218,30 +219,25 @@ export const MakeWarpDialog = ({
 
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange}>
-        <div className="flex justify-between items-start">
-          <div className="dialog-title">
-            {initialData ? <p>Edit</p> : <><p>Make</p><p>Warp</p></>}
-          </div>
-          <div className="flex gap-2">
-            {onDelete && (
-              <IconButton variant="outline" size="icon" onClick={onDelete}>
-                <Trash2 size={16} strokeWidth={2.25} />
-              </IconButton>
-            )}
-            {initialData ? (
-              <IconButton variant="outline" size="icon" onClick={() => console.log('Share clicked')}>
-                <Share size={16} strokeWidth={2.25} />
-              </IconButton>
-            ) : (
-              <IconButton variant="outline" size="icon" onClick={onClose}>
-                <X size={16} strokeWidth={2.25} />
-              </IconButton>
-            )}
-            <IconButton variant="default" size="icon" onClick={handlePost}>
-              <Check size={16} strokeWidth={2.25} />
-            </IconButton>
-          </div>
-        </div>
+      <DialogHeader title={initialData ? ['Edit'] : ['Make', 'Warp']}>
+        {onDelete && (
+          <IconButton variant="outline" onClick={onDelete}>
+            <Trash2 size={16} strokeWidth={2.25} />
+          </IconButton>
+        )}
+        {initialData ? (
+          <IconButton variant="outline" onClick={() => console.log('Share clicked')}>
+            <Share size={16} strokeWidth={2.25} />
+          </IconButton>
+        ) : (
+          <IconButton variant="outline" onClick={onClose}>
+            <X size={16} strokeWidth={2.25} />
+          </IconButton>
+        )}
+        <IconButton variant="default" onClick={handlePost}>
+          <Check size={16} strokeWidth={2.25} />
+        </IconButton>
+      </DialogHeader>
 
         <div className="relative">
           <Input

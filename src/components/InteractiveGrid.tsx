@@ -12,6 +12,7 @@ import WelcomeDialog from './WelcomeDialog';
 import MeDialog from './MeDialog';
 import DebugControls from './ui/DebugControls';
 import SegmentedControl from './ui/SegmentedControl';
+import UpdateAvatarDialog from './UpdateAvatarDialog';
 
 const smoothstep = (min: number, max: number, value: number) => {
   const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
@@ -446,10 +447,11 @@ const GridCanvas = () => {
   const [meDialogSize, setMeDialogSize] = useState<{ width: number, height: number } | null>(null);
   const [segmentedControlSize, setSegmentedControlSize] = useState<{ width: number, height: number, top: number, left: number } | null>(null);
   const [isSegmentedControlVisible, setSegmentedControlVisible] = useState(false);
+  const [isUpdatingAvatar, setUpdatingAvatar] = useState(false);
   const [dialogBumpConfig, setDialogBumpConfig] = useState<DialogBumpConfig>(SETTING_A);
   const segmentedControlRef = useRef<HTMLDivElement>(null);
 
-  const isAnyDialogOpen = isDialogOpen || onboardingStep !== 'complete' || !!meDialogSize;
+  const isAnyDialogOpen = isDialogOpen || onboardingStep !== 'complete';
 
   useEffect(() => {
     if (segmentedControlRef.current && isSegmentedControlVisible) {
@@ -523,12 +525,19 @@ const GridCanvas = () => {
     setProfileDialogSize(null);
   }
 
-  const handleUpdateAvatar = (icon: string) => {
+  const handleStartUpdateAvatar = () => {
+    setMeDialogSize(null);
+    setUpdatingAvatar(true);
+  };
+
+  const handleAvatarSave = (newIcon: string) => {
     if (userProfile) {
-      const updatedProfile = { ...userProfile, icon };
+      const updatedProfile = { ...userProfile, icon: newIcon };
       localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
       setUserProfile(updatedProfile);
     }
+    setUpdatingAvatar(false);
+    setMeDialogSize({ width: 300, height: 557 });
   };
 
   const handleDeleteAccount = () => {
@@ -684,19 +693,30 @@ const GridCanvas = () => {
         <AnimatePresence>
           {meDialogSize && (
             <MeDialog
+              key={userProfile.icon}
               userProfile={userProfile}
               onClose={() => setMeDialogSize(null)}
               onSizeChange={setMeDialogSize}
-              onUpdateAvatar={handleUpdateAvatar}
+              onUpdateAvatar={handleStartUpdateAvatar}
               onDeleteAccount={handleDeleteAccount}
             />
           )}
         </AnimatePresence>
       )}
+       {isUpdatingAvatar && userProfile && (
+        <UpdateAvatarDialog
+          defaultValue={userProfile.icon}
+          onSave={handleAvatarSave}
+          onClose={() => {
+            setUpdatingAvatar(false);
+            setMeDialogSize({ width: 300, height: 557 });
+          }}
+        />
+      )}
       <AnimatePresence onExitComplete={() => setSegmentedControlVisible(false)}>
         {!isAnyDialogOpen && onboardingStep === 'complete' && (
           <motion.div 
-            className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10"
+            className="absolute bottom-12 left-1/2 -translate-x-1/2 z-50"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
