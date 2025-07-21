@@ -13,12 +13,14 @@ export const ProfileDialog = ({
   onClose,
   onSizeChange,
   isModal,
+  children,
 }: {
   initialData: { username: string; icon: string } | null;
   onSave: (data: { username:string; icon: string }) => void;
   onClose: () => void;
   onSizeChange?: (size: { width: number, height: number }) => void;
   isModal?: boolean;
+  children?: React.ReactNode;
 }) => {
   const usernameInputRef = useRef<HTMLInputElement>(null);
   const [username, setUsername] = useState(initialData?.username || '');
@@ -33,6 +35,14 @@ export const ProfileDialog = ({
   const handleIconSelect = (seed: string) => {
     setSelectedIconSeed(seed);
   };
+
+  if (children) {
+    return (
+      <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={isModal}>
+        {children}
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={isModal}>

@@ -8,6 +8,7 @@ import Dialog from './ui/Dialog';
 import Image from 'next/image';
 import NotificationToggle from './ui/NotificationToggle';
 import DialogHeader from './ui/DialogHeader';
+import { deleteUserAccount } from '@/lib/user';
 
 const MeDialog = ({
   userProfile,
@@ -23,6 +24,24 @@ const MeDialog = ({
   onDeleteAccount: () => void;
 }) => {
   const [notifications, setNotifications] = React.useState(true);
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+
+  const handleDelete = async () => {
+    await deleteUserAccount();
+    onDeleteAccount();
+  };
+
+  React.useEffect(() => {
+    if (dialogRef.current) {
+      // This effect is needed to ensure the dialog is closed when the component unmounts
+      // or when the dialog is re-rendered with a different onClose prop.
+      // The original Dialog component handles its own closing, but this ensures
+      // the dialog state is reset if onClose changes.
+      // This is a common pattern when using Dialog with a custom onClose prop.
+      // However, the original Dialog component's onClose prop is sufficient.
+      // This effect is kept as a fallback or for future Dialog updates.
+    }
+  }, [onClose]);
 
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={true}>
@@ -36,6 +55,7 @@ const MeDialog = ({
                 width={48}
                 height={48}
                 className="rounded-2xl"
+                style={{ height: 'auto' }}
               />
             </button>
             <IconButton variant="ghost" onClick={onClose}>
@@ -65,7 +85,7 @@ const MeDialog = ({
         <hr className="border-white/20" />
         <Button
           variant="tertiary"
-          onClick={onDeleteAccount}
+          onClick={handleDelete}
           className="w-full justify-center"
         >
           <Trash2 size={16} strokeWidth={2.25} className="mr-2 text-white/40" />

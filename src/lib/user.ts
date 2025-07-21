@@ -1,5 +1,7 @@
-import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore"; 
-import { db } from "./firebase";
+import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { auth, db } from "./firebase";
+import { getWarpsByOwner, deleteWarp } from "./warp";
+import { deleteUser as deleteFirebaseUser } from "firebase/auth";
 
 export const createUserProfile = async (uid: string, data: { username: string; icon: string; photoURL?: string }) => {
   try {
@@ -12,6 +14,20 @@ export const createUserProfile = async (uid: string, data: { username: string; i
   }
 };
 
+export const getUsersByIds = async (uids: string[]) => {
+  if (uids.length === 0) {
+    return {};
+  }
+  const usersRef = collection(db, "users");
+  const q = query(usersRef, where('uid', 'in', uids));
+  const querySnapshot = await getDocs(q);
+  const users: { [key: string]: any } = {};
+  querySnapshot.forEach((doc) => {
+    users[doc.id] = doc.data();
+  });
+  return users;
+};
+
 export const getUserProfile = async (uid: string) => {
   try {
     const docRef = doc(db, "users", uid);
@@ -19,7 +35,6 @@ export const getUserProfile = async (uid: string) => {
     if (docSnap.exists()) {
       return docSnap.data();
     } else {
-      console.log("No such document!");
       return null;
     }
   } catch (error) {
@@ -34,5 +49,41 @@ export const updateUserProfile = async (uid: string, data: { username?: string; 
     await updateDoc(docRef, data);
   } catch (error) {
     console.error("Error updating user profile:", error);
+  }
+};
+
+export const deleteUserProfile = async (uid: string) => {
+  try {
+    await deleteDoc(doc(db, "users", uid));
+  } catch (error) {
+    console.error("Error deleting user profile:", error);
+  }
+};
+
+export const deleteUserAccount = async () => {
+  const user = auth.currentUser;
+  if (!user) {
+    console.error("No user is signed in to delete.");
+    return;
+  }
+
+  try {
+    // 1. Delete all warps owned by the user
+    const userWarps = await getWarpsByOwner(user.uid);
+    for (const warp of userWarps) {
+      await deleteWarp(warp.id);
+    }
+
+    // 2. Delete the user's profile document
+    await deleteUserProfile(user.uid);
+
+    // 3. Delete the user from Firebase Authentication
+    await deleteFirebaseUser(user);
+
+    console.log("User account deleted successfully.");
+  } catch (error) {
+    console.error("Error deleting user account:", error);
+    // This might require the user to re-authenticate.
+    // We can handle that if it becomes an issue.
   }
 }; 

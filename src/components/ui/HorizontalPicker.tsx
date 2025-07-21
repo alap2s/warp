@@ -66,6 +66,7 @@ const HorizontalPicker = ({ onIconSelect, defaultValue }: HorizontalPickerProps)
                 width={80}
                 height={80}
                 className="avatar-image"
+                style={{ height: 'auto' }}
               />
             </div>
           </SplideSlide>

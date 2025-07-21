@@ -1,4 +1,4 @@
-import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
 import { db } from "./firebase";
 
 export const createWarp = async (data: { what: string; when: Date; where: string; icon: string; ownerId: string }) => {
@@ -23,6 +23,19 @@ export const getWarps = async () => {
     return warpsList;
   } catch (error) {
     console.error("Error getting warps:", error);
+    return [];
+  }
+};
+
+export const getWarpsByOwner = async (ownerId: string) => {
+  try {
+    const warpsCol = collection(db, "warps");
+    const q = query(warpsCol, where("ownerId", "==", ownerId));
+    const warpsSnapshot = await getDocs(q);
+    const warpsList = warpsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return warpsList;
+  } catch (error) {
+    console.error("Error getting warps by owner:", error);
     return [];
   }
 };

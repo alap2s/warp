@@ -3,21 +3,11 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { useSpring, SpringValue } from '@react-spring/three';
-import { AnimatePresence, motion } from 'framer-motion';
 import * as THREE from 'three';
-import { MakeWarpDialog, FormData, getIcon, iconMap } from './MakeWarpDialog';
-import WarpTile from './WarpTile';
-import ProfileDialog from './ProfileDialog';
-import WelcomeDialog from './WelcomeDialog';
-import MeDialog from './MeDialog';
-import DebugControls from './ui/DebugControls';
-import SegmentedControl from './ui/SegmentedControl';
-import UpdateAvatarDialog from './UpdateAvatarDialog';
 import { useAuth } from '@/context/AuthContext';
-import { createWarp, getWarps } from '@/lib/warp';
-import { auth, db } from '@/lib/firebase';
-import { signInAnonymously } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { useGridState } from '@/context/GridStateContext';
+import { useWarps } from '@/lib/hooks/useWarps';
+import GridUIManager from './GridUIManager';
 
 const smoothstep = (min: number, max: number, value: number) => {
   const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
@@ -438,49 +428,21 @@ const SETTING_B: DialogBumpConfig = {
 };
 
 const GridCanvas = () => {
-  const { user, profile } = useAuth();
-  const [isDialogOpen, setDialogOpen] = useState(false);
-  const [warps, setWarps] = useState<any[]>([]);
-  const [activeWarp, setActiveWarp] = useState<any | null>(null);
-  const [warpToEdit, setWarpToEdit] = useState<any | null>(null);
+  const { profile } = useAuth();
+  const {
+    isMakeWarpDialogOpen,
+    activeWarp,
+    openMakeWarpDialog,
+    dialogSize,
+    profileDialogSize,
+    meDialogSize,
+  } = useGridState();
   const [viewportInfo, setViewportInfo] = useState<ViewportInfo | null>(null);
-  const [dialogSize, setDialogSize] = useState<{ width: number, height: number } | null>(null);
-  const [profileDialogSize, setProfileDialogSize] = useState<{ width: number, height: number } | null>(null);
-  const [meDialogSize, setMeDialogSize] = useState<{ width: number, height: number } | null>(null);
   const [segmentedControlSize, setSegmentedControlSize] = useState<{ width: number, height: number, top: number, left: number } | null>(null);
   const [isSegmentedControlVisible, setSegmentedControlVisible] = useState(false);
-  const [isUpdatingAvatar, setUpdatingAvatar] = useState(false);
   const [dialogBumpConfig, setDialogBumpConfig] = useState<DialogBumpConfig>(SETTING_A);
-  const segmentedControlRef = useRef<HTMLDivElement>(null);
 
-  const isAnyDialogOpen = isDialogOpen || !profile || !!meDialogSize;
-
-  useEffect(() => {
-    const fetchWarps = async () => {
-      const allWarps = await getWarps();
-      setWarps(allWarps);
-    };
-    fetchWarps();
-  }, []);
-
-  useEffect(() => {
-    if (segmentedControlRef.current && isSegmentedControlVisible) {
-      const { width, height, top, left } = segmentedControlRef.current.getBoundingClientRect();
-      setSegmentedControlSize({ width, height, top, left });
-    } else {
-      setSegmentedControlSize(null);
-    }
-  }, [isSegmentedControlVisible]);
-
-  useEffect(() => {
-    if (!profile) {
-      try {
-        signInAnonymously(auth);
-      } catch (error) {
-        console.error("Error signing in anonymously:", error);
-      }
-    }
-  }, [profile]);
+  const isAnyDialogOpen = isMakeWarpDialogOpen || !profile || !!meDialogSize;
 
   const handleSettingSelect = (setting: 'A' | 'B') => {
     setDialogBumpConfig(setting === 'A' ? SETTING_A : SETTING_B);
@@ -488,87 +450,7 @@ const GridCanvas = () => {
 
   const handleGridClick = () => {
     if(isAnyDialogOpen) return;
-    setWarpToEdit(null);
-    setDialogOpen(true);
-  };
-
-  const handlePost = async (data: FormData) => {
-    if (!user) return;
-    const iconName = Object.keys(iconMap).find(key => iconMap[key] === data.icon) || 'LineSquiggle';
-    const warpId = await createWarp({
-      what: data.what,
-      when: data.when,
-      where: data.where,
-      icon: iconName,
-      ownerId: user.uid,
-    });
-    if (warpId) {
-      const newWarps = await getWarps();
-      setWarps(newWarps);
-    }
-    setDialogOpen(false);
-    setWarpToEdit(null);
-    setDialogSize(null);
-  };
-
-  const handleStartEdit = (warp: any) => {
-    if (!warp) return;
-    const IconComponent = getIcon(warp.what);
-    setWarpToEdit({ ...warp, icon: IconComponent });
-    setActiveWarp(null);
-    setDialogOpen(true);
-  };
-
-  const handleDelete = async () => {
-    if (!warpToEdit) return;
-    // await deleteWarp(warpToEdit.id);
-    const newWarps = await getWarps();
-    setWarps(newWarps);
-    setActiveWarp(null);
-    setDialogOpen(false);
-    setWarpToEdit(null);
-    setDialogSize(null);
-  }
-
-  const handleCloseDialog = () => {
-    setDialogOpen(false);
-    if (warpToEdit) {
-      setActiveWarp(warpToEdit);
-    }
-    setWarpToEdit(null);
-    setDialogSize(null);
-  }
-
-  const handleSaveProfile = async (data: { username: string; icon: string }) => {
-    if (user) {
-      // This is now handled in page.tsx
-    }
-  };
-
-  const handleCloseOnboarding = () => {
-    // This is now handled in page.tsx
-  }
-
-  const handleStartUpdateAvatar = () => {
-    setMeDialogSize(null);
-    setUpdatingAvatar(true);
-  };
-
-  const handleAvatarSave = async (newIcon: string) => {
-    if (user && profile) {
-      const updatedProfile = { ...profile, icon: newIcon };
-      // await updateUserProfile(user.uid, { icon: newIcon });
-    }
-    setUpdatingAvatar(false);
-    setMeDialogSize({ width: 300, height: 557 });
-  };
-
-  const handleDeleteAccount = async () => {
-    if (user) {
-      // Note: Deleting anonymous user accounts is more complex.
-      // For now, we'll just clear the local state.
-      // A more robust solution would involve a Firebase Function.
-    }
+    openMakeWarpDialog();
   };
 
   const dialogRect = useMemo(() => {
@@ -661,11 +543,6 @@ const GridCanvas = () => {
 
   return (
     <div className="w-screen h-screen bg-black relative">
-      {false && <DebugControls
-        values={dialogBumpConfig}
-        onChange={setDialogBumpConfig}
-        onSettingSelect={handleSettingSelect}
-      />}
       <div className="absolute inset-0 z-0">
         <Canvas camera={{ position: [0, 10, 0.1], fov: 50 }}>
           <ViewportReporter onViewportChange={setViewportInfo} />
@@ -680,89 +557,7 @@ const GridCanvas = () => {
           />
         </Canvas>
       </div>
-      <AnimatePresence>
-        {isDialogOpen && (
-          <MakeWarpDialog
-            key={warpToEdit ? 'edit' : 'new'}
-            initialData={warpToEdit}
-            onClose={handleCloseDialog}
-            onPost={handlePost}
-            onDelete={warpToEdit ? handleDelete : undefined}
-            onSizeChange={setDialogSize}
-          />
-        )}
-      </AnimatePresence>
-      {warps.map(warp => {
-        const IconComponent = getIcon(warp.what);
-        return <WarpTile key={warp.id} warp={{...warp, icon: IconComponent}} username={profile?.username || ''} onRemove={() => handleStartEdit(warp)} />
-      })}
-      {!profile && (
-        <WelcomeDialog
-          onNext={() => {
-            // now handled in page.tsx
-          }}
-          onClose={handleCloseOnboarding}
-          onSizeChange={setDialogSize}
-          isModal={true}
-        />
-      )}
-      {!profile && (
-        <ProfileDialog
-          initialData={null}
-          onSave={handleSaveProfile}
-          onClose={handleCloseOnboarding}
-          onSizeChange={setProfileDialogSize}
-          isModal={true}
-        />
-      )}
-      {profile && (
-        <AnimatePresence>
-          {meDialogSize && (
-            <MeDialog
-              key={profile.icon}
-              userProfile={profile}
-              onClose={() => setMeDialogSize(null)}
-              onSizeChange={setMeDialogSize}
-              onUpdateAvatar={handleStartUpdateAvatar}
-              onDeleteAccount={handleDeleteAccount}
-            />
-          )}
-        </AnimatePresence>
-      )}
-       {isUpdatingAvatar && profile && (
-        <UpdateAvatarDialog
-          defaultValue={profile.icon}
-          onSave={handleAvatarSave}
-          onClose={() => {
-            setUpdatingAvatar(false);
-            setMeDialogSize({ width: 300, height: 557 });
-          }}
-        />
-      )}
-      <AnimatePresence onExitComplete={() => setSegmentedControlVisible(false)}>
-        {!isAnyDialogOpen && profile && (
-          <motion.div
-            className="absolute bottom-12 left-1/2 -translate-x-1/2 z-50"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-            onAnimationComplete={() => setSegmentedControlVisible(true)}
-          >
-            <SegmentedControl
-              ref={segmentedControlRef}
-              options={['Everyone', 'Friends', 'Me']}
-              onSelect={(option) => {
-                if (option === 'Me') {
-                  setMeDialogSize({ width: 300, height: 557 }); // Initial size, will be updated
-                } else {
-                  setMeDialogSize(null);
-                }
-              }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <GridUIManager />
     </div>
   );
 };

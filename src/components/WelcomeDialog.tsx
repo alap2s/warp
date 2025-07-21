@@ -10,12 +10,22 @@ export const WelcomeDialog = ({
   onClose,
   onSizeChange,
   isModal,
+  children,
 }: {
   onNext: () => void;
   onClose: () => void;
   onSizeChange?: (size: { width: number, height: number }) => void;
   isModal?: boolean;
+  children?: React.ReactNode;
 }) => {
+  if (children) {
+    return (
+      <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={isModal}>
+        {children}
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={isModal}>
       <div className="flex items-start justify-between">
