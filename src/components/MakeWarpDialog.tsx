@@ -18,7 +18,7 @@ interface IconProps {
   size?: number;
 }
 
-const iconMap: { [key: string]: React.ComponentType<IconProps> } = {
+export const iconMap: { [key: string]: React.ComponentType<IconProps> } = {
   // Existing items
   'coffee': Coffee,
   'tea': Coffee,

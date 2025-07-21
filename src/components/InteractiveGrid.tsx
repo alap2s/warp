@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { useSpring, SpringValue } from '@react-spring/three';
 import { AnimatePresence, motion } from 'framer-motion';
 import * as THREE from 'three';
-import { MakeWarpDialog, FormData } from './MakeWarpDialog';
+import { MakeWarpDialog, FormData, getIcon, iconMap } from './MakeWarpDialog';
 import WarpTile from './WarpTile';
 import ProfileDialog from './ProfileDialog';
 import WelcomeDialog from './WelcomeDialog';
@@ -13,6 +13,11 @@ import MeDialog from './MeDialog';
 import DebugControls from './ui/DebugControls';
 import SegmentedControl from './ui/SegmentedControl';
 import UpdateAvatarDialog from './UpdateAvatarDialog';
+import { useAuth } from '@/context/AuthContext';
+import { createWarp, getWarps } from '@/lib/warp';
+import { auth, db } from '@/lib/firebase';
+import { signInAnonymously } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 const smoothstep = (min: number, max: number, value: number) => {
   const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
@@ -27,9 +32,9 @@ interface DialogBumpConfig {
   dialogBumpScale: number;
 }
 
-const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, warpTileRect, profileDialogRect, segmentedControlRect, meDialogRect, dialogBumpConfig }: { 
-  isPointerDown: boolean, 
-  pointerPos: THREE.Vector3, 
+const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, warpTileRect, profileDialogRect, segmentedControlRect, meDialogRect, dialogBumpConfig }: {
+  isPointerDown: boolean,
+  pointerPos: THREE.Vector3,
   bumpStrength: SpringValue,
   dialogRect: Rect | null,
   warpTileRect: Rect | null,
@@ -46,7 +51,7 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   const prevProfileDialogRect = useRef(profileDialogRect);
   const prevSegmentedControlRect = useRef(segmentedControlRect);
   const prevMeDialogRect = useRef(meDialogRect);
-  
+
   const originalPositions = useRef<Float32Array | null>(null);
   const { val: dialogBumpStrength } = useSpring({ val: 0 });
   const { val: tileBumpStrength } = useSpring({ val: 0 });
@@ -113,7 +118,7 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
 
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
-    
+
     const wasDialog = !!prevDialogRect.current;
     const isDialog = !!dialogRect;
     const wasTile = !!prevWarpTileRect.current;
@@ -170,9 +175,6 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
     prevSegmentedControlRect.current = segmentedControlRect;
     prevMeDialogRect.current = meDialogRect;
 
-    // meshRef.current.material.map.offset.x = clock.getElapsedTime() * 0.01;
-    // meshRef.current.material.map.offset.y = clock.getElapsedTime() * 0.01;
-    
     const vertices = meshRef.current.geometry.attributes.position.array as Float32Array;
     const strength = bumpStrength.get();
     const animatedDialogStrength = dialogBumpStrength.get();
@@ -183,7 +185,7 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
 
     if (strength === 0 && !isPointerDown && animatedDialogStrength === 0 && animatedTileStrength === 0 && animatedProfileDialogStrength === 0 && animatedSegmentedControlStrength === 0 && animatedMeDialogStrength === 0 && !rippleRef.current?.active) {
       if (vertices.every((v, i) => v === originalPositions.current![i])) return;
-      
+
       for (let i = 0; i < vertices.length; i++) {
           vertices[i] = originalPositions.current![i];
       }
@@ -195,7 +197,7 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
     for (let i = 0; i < vertices.length; i += 3) {
       const x = originalPositions.current![i];
       const y = originalPositions.current![i+1];
-      
+
       const mouseDistance = new THREE.Vector2(x, y).distanceTo(
         new THREE.Vector2(pointerPos.x, -pointerPos.z)
       );
@@ -203,33 +205,33 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
       const radius = 1.67;
       const mouseEase = 0.5 * (1 + Math.cos(Math.PI * Math.min(mouseDistance / radius, 1)));
       let zDisplacement = isPointerDown ? strength * mouseEase * -1.5 : 0;
-      
+
       if (rippleRef.current?.active) {
         const { startTime, rect, isOpening } = rippleRef.current;
         const elapsedTime = clock.getElapsedTime() - startTime;
-        
+
         if (rect) {
           const speed = 5;
           const amplitude = 0.4;
           const rippleWidth = 1.5;
           const signedAmplitude = isOpening ? -amplitude : amplitude;
-          
+
           const sdfDist = sdfRoundedBox(
-            new THREE.Vector2(x - (rect.centerX || 0), y - (rect.centerY || 0)), 
-            new THREE.Vector2(rect.width / 2, rect.height / 2), 
+            new THREE.Vector2(x - (rect.centerX || 0), y - (rect.centerY || 0)),
+            new THREE.Vector2(rect.width / 2, rect.height / 2),
             rect.cornerRadius
           );
 
           const rippleDist = elapsedTime * speed;
           const distFromRipple = Math.abs(sdfDist - rippleDist);
-          
+
           if (distFromRipple < rippleWidth / 2) {
             const rippleFactor = Math.cos((distFromRipple / (rippleWidth / 2)) * (Math.PI / 2));
             const decay = Math.max(0, 1 - (elapsedTime / 2.0));
             zDisplacement += rippleFactor * signedAmplitude * decay;
           }
         }
-      
+
         if (elapsedTime > 2.0) {
           rippleRef.current = null;
         }
@@ -239,13 +241,13 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
         const rectHalfWidth = dialogRect.width / 2;
         const rectHalfHeight = dialogRect.height / 2;
         const cornerRadius = dialogRect.cornerRadius;
-        
+
         const dist = sdfRoundedBox(
-          new THREE.Vector2(x, y), 
-          new THREE.Vector2(rectHalfWidth, rectHalfHeight), 
+          new THREE.Vector2(x, y),
+          new THREE.Vector2(rectHalfWidth, rectHalfHeight),
           cornerRadius
         );
-        
+
         const edgeSoftness = dialogBumpConfig.dialogEdgeSoftness;
         const factor = 1.0 - smoothstep(0, edgeSoftness, dist);
         zDisplacement += animatedDialogStrength * factor;
@@ -255,13 +257,13 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
         const rectHalfWidth = profileDialogRect.width / 2;
         const rectHalfHeight = profileDialogRect.height / 2;
         const cornerRadius = profileDialogRect.cornerRadius;
-        
+
         const dist = sdfRoundedBox(
-          new THREE.Vector2(x, y), 
-          new THREE.Vector2(rectHalfWidth, rectHalfHeight), 
+          new THREE.Vector2(x, y),
+          new THREE.Vector2(rectHalfWidth, rectHalfHeight),
           cornerRadius
         );
-        
+
         const edgeSoftness = dialogBumpConfig.dialogEdgeSoftness;
         const factor = 1.0 - smoothstep(0, edgeSoftness, dist);
         zDisplacement += animatedProfileDialogStrength * factor;
@@ -271,13 +273,13 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
         const rectHalfWidth = meDialogRect.width / 2;
         const rectHalfHeight = meDialogRect.height / 2;
         const cornerRadius = meDialogRect.cornerRadius;
-        
+
         const dist = sdfRoundedBox(
-          new THREE.Vector2(x, y), 
-          new THREE.Vector2(rectHalfWidth, rectHalfHeight), 
+          new THREE.Vector2(x, y),
+          new THREE.Vector2(rectHalfWidth, rectHalfHeight),
           cornerRadius
         );
-        
+
         const edgeSoftness = dialogBumpConfig.dialogEdgeSoftness;
         const factor = 1.0 - smoothstep(0, edgeSoftness, dist);
         zDisplacement += animatedMeDialogStrength * factor;
@@ -287,13 +289,13 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
         const rectHalfWidth = segmentedControlRect.width / 2;
         const rectHalfHeight = segmentedControlRect.height / 2;
         const cornerRadius = segmentedControlRect.cornerRadius;
-        
+
         const dist = sdfRoundedBox(
-          new THREE.Vector2(x - (segmentedControlRect.centerX || 0), y - (segmentedControlRect.centerY || 0)), 
-          new THREE.Vector2(rectHalfWidth, rectHalfHeight), 
+          new THREE.Vector2(x - (segmentedControlRect.centerX || 0), y - (segmentedControlRect.centerY || 0)),
+          new THREE.Vector2(rectHalfWidth, rectHalfHeight),
           cornerRadius
         );
-        
+
         const edgeSoftness = 0.1;
         const factor = 1.0 - smoothstep(0, edgeSoftness, dist);
         zDisplacement += animatedSegmentedControlStrength * factor;
@@ -305,8 +307,8 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
         const radius = warpTileRect.cornerRadius;
 
         const dist = sdfRoundedBox(
-          new THREE.Vector2(x, y), 
-          new THREE.Vector2(halfWidth, halfHeight), 
+          new THREE.Vector2(x, y),
+          new THREE.Vector2(halfWidth, halfHeight),
           radius
         );
 
@@ -329,7 +331,7 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
       geometry={geometry}
       rotation={[-Math.PI / 2, 0, 0]}
     >
-      <meshStandardMaterial 
+      <meshStandardMaterial
         map={texture}
         map-repeat={[viewport.width / 2, viewport.height / 2]}
         roughness={0.7}
@@ -339,8 +341,8 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   );
 };
 
-const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect, profileDialogRect, segmentedControlRect, meDialogRect, dialogBumpConfig }: { 
-  onPointerUp: (e: ThreeEvent<PointerEvent>) => void, 
+const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect, profileDialogRect, segmentedControlRect, meDialogRect, dialogBumpConfig }: {
+  onPointerUp: (e: ThreeEvent<PointerEvent>) => void,
   dialogRect: Rect | null,
   warpTileRect: Rect | null,
   profileDialogRect: Rect | null,
@@ -368,7 +370,7 @@ const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect, profileDialogR
       onPointerUp(e);
     }
   };
-  
+
   const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
     if (isPointerDown || e.buttons === 1) {
       e.stopPropagation();
@@ -384,9 +386,9 @@ const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect, profileDialogR
     <>
       <ambientLight intensity={1.5} />
       <pointLight position={[0, 10, 5]} intensity={150} />
-      <DeformableGrid 
-        isPointerDown={isPointerDown} 
-        pointerPos={pointerPos.current} 
+      <DeformableGrid
+        isPointerDown={isPointerDown}
+        pointerPos={pointerPos.current}
         bumpStrength={bumpStrength}
         dialogRect={dialogRect}
         warpTileRect={warpTileRect}
@@ -436,11 +438,11 @@ const SETTING_B: DialogBumpConfig = {
 };
 
 const GridCanvas = () => {
+  const { user, profile } = useAuth();
   const [isDialogOpen, setDialogOpen] = useState(false);
-  const [userProfile, setUserProfile] = useState<{ username: string; icon: string } | null>(null);
-  const [onboardingStep, setOnboardingStep] = useState<'welcome' | 'profile' | 'complete'>('complete');
-  const [activeWarp, setActiveWarp] = useState<FormData | null>(null);
-  const [warpToEdit, setWarpToEdit] = useState<FormData | null>(null);
+  const [warps, setWarps] = useState<any[]>([]);
+  const [activeWarp, setActiveWarp] = useState<any | null>(null);
+  const [warpToEdit, setWarpToEdit] = useState<any | null>(null);
   const [viewportInfo, setViewportInfo] = useState<ViewportInfo | null>(null);
   const [dialogSize, setDialogSize] = useState<{ width: number, height: number } | null>(null);
   const [profileDialogSize, setProfileDialogSize] = useState<{ width: number, height: number } | null>(null);
@@ -451,7 +453,15 @@ const GridCanvas = () => {
   const [dialogBumpConfig, setDialogBumpConfig] = useState<DialogBumpConfig>(SETTING_A);
   const segmentedControlRef = useRef<HTMLDivElement>(null);
 
-  const isAnyDialogOpen = isDialogOpen || onboardingStep !== 'complete';
+  const isAnyDialogOpen = isDialogOpen || !profile || !!meDialogSize;
+
+  useEffect(() => {
+    const fetchWarps = async () => {
+      const allWarps = await getWarps();
+      setWarps(allWarps);
+    };
+    fetchWarps();
+  }, []);
 
   useEffect(() => {
     if (segmentedControlRef.current && isSegmentedControlVisible) {
@@ -463,39 +473,57 @@ const GridCanvas = () => {
   }, [isSegmentedControlVisible]);
 
   useEffect(() => {
-    const profile = localStorage.getItem('userProfile');
-    if (profile) {
-      setUserProfile(JSON.parse(profile));
-      setOnboardingStep('complete');
-    } else {
-      setOnboardingStep('welcome');
+    if (!profile) {
+      try {
+        signInAnonymously(auth);
+      } catch (error) {
+        console.error("Error signing in anonymously:", error);
+      }
     }
-  }, []);
+  }, [profile]);
 
   const handleSettingSelect = (setting: 'A' | 'B') => {
     setDialogBumpConfig(setting === 'A' ? SETTING_A : SETTING_B);
   };
 
   const handleGridClick = () => {
+    if(isAnyDialogOpen) return;
     setWarpToEdit(null);
     setDialogOpen(true);
   };
 
-  const handlePost = (data: FormData) => {
-    setActiveWarp(data);
+  const handlePost = async (data: FormData) => {
+    if (!user) return;
+    const iconName = Object.keys(iconMap).find(key => iconMap[key] === data.icon) || 'LineSquiggle';
+    const warpId = await createWarp({
+      what: data.what,
+      when: data.when,
+      where: data.where,
+      icon: iconName,
+      ownerId: user.uid,
+    });
+    if (warpId) {
+      const newWarps = await getWarps();
+      setWarps(newWarps);
+    }
     setDialogOpen(false);
     setWarpToEdit(null);
     setDialogSize(null);
   };
 
-  const handleStartEdit = () => {
-    if (!activeWarp) return;
-    setWarpToEdit(activeWarp);
+  const handleStartEdit = (warp: any) => {
+    if (!warp) return;
+    const IconComponent = getIcon(warp.what);
+    setWarpToEdit({ ...warp, icon: IconComponent });
     setActiveWarp(null);
     setDialogOpen(true);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
+    if (!warpToEdit) return;
+    // await deleteWarp(warpToEdit.id);
+    const newWarps = await getWarps();
+    setWarps(newWarps);
     setActiveWarp(null);
     setDialogOpen(false);
     setWarpToEdit(null);
@@ -511,18 +539,14 @@ const GridCanvas = () => {
     setDialogSize(null);
   }
 
-  const handleSaveProfile = (data: { username: string; icon: string }) => {
-    localStorage.setItem('userProfile', JSON.stringify(data));
-    setUserProfile(data);
-    setOnboardingStep('complete');
-    setDialogSize(null);
-    setProfileDialogSize(null);
+  const handleSaveProfile = async (data: { username: string; icon: string }) => {
+    if (user) {
+      // This is now handled in page.tsx
+    }
   };
 
   const handleCloseOnboarding = () => {
-    setOnboardingStep('complete');
-    setDialogSize(null);
-    setProfileDialogSize(null);
+    // This is now handled in page.tsx
   }
 
   const handleStartUpdateAvatar = () => {
@@ -530,21 +554,21 @@ const GridCanvas = () => {
     setUpdatingAvatar(true);
   };
 
-  const handleAvatarSave = (newIcon: string) => {
-    if (userProfile) {
-      const updatedProfile = { ...userProfile, icon: newIcon };
-      localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
-      setUserProfile(updatedProfile);
+  const handleAvatarSave = async (newIcon: string) => {
+    if (user && profile) {
+      const updatedProfile = { ...profile, icon: newIcon };
+      // await updateUserProfile(user.uid, { icon: newIcon });
     }
     setUpdatingAvatar(false);
     setMeDialogSize({ width: 300, height: 557 });
   };
 
-  const handleDeleteAccount = () => {
-    localStorage.removeItem('userProfile');
-    setUserProfile(null);
-    setOnboardingStep('welcome');
-    setMeDialogSize(null);
+  const handleDeleteAccount = async () => {
+    if (user) {
+      // Note: Deleting anonymous user accounts is more complex.
+      // For now, we'll just clear the local state.
+      // A more robust solution would involve a Firebase Function.
+    }
   };
 
   const dialogRect = useMemo(() => {
@@ -558,7 +582,7 @@ const GridCanvas = () => {
     const dialogWorldWidth = (dialogWidthPx / size.width) * viewport.width;
     const dialogWorldHeight = (dialogHeightPx / size.height) * viewport.height;
     const cornerRadius = (dialogCornerRadiusPx / size.width) * viewport.width;
-    
+
     return { width: dialogWorldWidth, height: dialogWorldHeight, cornerRadius };
   }, [dialogSize, viewportInfo]);
 
@@ -573,7 +597,7 @@ const GridCanvas = () => {
     const dialogWorldWidth = (dialogWidthPx / size.width) * viewport.width;
     const dialogWorldHeight = (dialogHeightPx / size.height) * viewport.height;
     const cornerRadius = (dialogCornerRadiusPx / size.width) * viewport.width;
-    
+
     return { width: dialogWorldWidth, height: dialogWorldHeight, cornerRadius };
   }, [profileDialogSize, viewportInfo]);
 
@@ -588,7 +612,7 @@ const GridCanvas = () => {
     const dialogWorldWidth = (dialogWidthPx / size.width) * viewport.width;
     const dialogWorldHeight = (dialogHeightPx / size.height) * viewport.height;
     const cornerRadius = (dialogCornerRadiusPx / size.width) * viewport.width;
-    
+
     return { width: dialogWorldWidth, height: dialogWorldHeight, cornerRadius };
   }, [meDialogSize, viewportInfo]);
 
@@ -597,7 +621,7 @@ const GridCanvas = () => {
 
     const { viewport, size } = viewportInfo;
     const { width, height, top, left } = segmentedControlSize;
-    
+
     const controlWidthPx = width;
     const controlHeightPx = height;
     const cornerRadiusPx = 12;
@@ -608,7 +632,7 @@ const GridCanvas = () => {
 
     const centerX = ((left + width / 2) / size.width - 0.5) * viewport.width;
     const centerY = -((top + height / 2) / size.height - 0.5) * viewport.height;
-    
+
     return { width: controlWorldWidth, height: controlWorldHeight, cornerRadius, centerX, centerY };
   }, [segmentedControlSize, viewportInfo, isSegmentedControlVisible]);
 
@@ -637,16 +661,16 @@ const GridCanvas = () => {
 
   return (
     <div className="w-screen h-screen bg-black relative">
-      {false && <DebugControls 
-        values={dialogBumpConfig} 
+      {false && <DebugControls
+        values={dialogBumpConfig}
         onChange={setDialogBumpConfig}
         onSettingSelect={handleSettingSelect}
       />}
       <div className="absolute inset-0 z-0">
         <Canvas camera={{ position: [0, 10, 0.1], fov: 50 }}>
           <ViewportReporter onViewportChange={setViewportInfo} />
-          <InteractiveGrid 
-            onPointerUp={handleGridClick} 
+          <InteractiveGrid
+            onPointerUp={handleGridClick}
             dialogRect={scaledDialogRect}
             warpTileRect={warpTileRect}
             profileDialogRect={profileDialogRect}
@@ -668,33 +692,35 @@ const GridCanvas = () => {
           />
         )}
       </AnimatePresence>
-      {activeWarp && userProfile && <WarpTile warp={activeWarp} username={userProfile.username} onRemove={handleStartEdit} />}
-      {onboardingStep === 'welcome' && (
+      {warps.map(warp => {
+        const IconComponent = getIcon(warp.what);
+        return <WarpTile key={warp.id} warp={{...warp, icon: IconComponent}} username={profile?.username || ''} onRemove={() => handleStartEdit(warp)} />
+      })}
+      {!profile && (
         <WelcomeDialog
           onNext={() => {
-            setOnboardingStep('profile');
-            setDialogSize(null);
+            // now handled in page.tsx
           }}
           onClose={handleCloseOnboarding}
           onSizeChange={setDialogSize}
           isModal={true}
         />
       )}
-      {onboardingStep === 'profile' && (
+      {!profile && (
         <ProfileDialog
-          initialData={userProfile}
+          initialData={null}
           onSave={handleSaveProfile}
           onClose={handleCloseOnboarding}
           onSizeChange={setProfileDialogSize}
           isModal={true}
         />
       )}
-      {onboardingStep === 'complete' && userProfile && (
+      {profile && (
         <AnimatePresence>
           {meDialogSize && (
             <MeDialog
-              key={userProfile.icon}
-              userProfile={userProfile}
+              key={profile.icon}
+              userProfile={profile}
               onClose={() => setMeDialogSize(null)}
               onSizeChange={setMeDialogSize}
               onUpdateAvatar={handleStartUpdateAvatar}
@@ -703,9 +729,9 @@ const GridCanvas = () => {
           )}
         </AnimatePresence>
       )}
-       {isUpdatingAvatar && userProfile && (
+       {isUpdatingAvatar && profile && (
         <UpdateAvatarDialog
-          defaultValue={userProfile.icon}
+          defaultValue={profile.icon}
           onSave={handleAvatarSave}
           onClose={() => {
             setUpdatingAvatar(false);
@@ -714,8 +740,8 @@ const GridCanvas = () => {
         />
       )}
       <AnimatePresence onExitComplete={() => setSegmentedControlVisible(false)}>
-        {!isAnyDialogOpen && onboardingStep === 'complete' && (
-          <motion.div 
+        {!isAnyDialogOpen && profile && (
+          <motion.div
             className="absolute bottom-12 left-1/2 -translate-x-1/2 z-50"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

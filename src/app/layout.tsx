@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Anonymous_Pro } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -43,12 +44,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${anonymousPro.variable} font-sans antialiased`}>{children}</body>
+    <html lang="en">
+      <body className={`${inter.variable} ${anonymousPro.variable}`}>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

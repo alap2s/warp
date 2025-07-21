@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { IconButton } from './ui/IconButton';
+import { Button } from './ui/Button';
 import { Check } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import HorizontalPicker from './ui/HorizontalPicker';
@@ -21,12 +21,12 @@ const UpdateAvatarDialog = ({
   return (
     <Dialog onClose={onClose} isModal={true} zIndex={60}>
       <DialogHeader title={['Update', 'Thumbavatar']}>
-        <IconButton
-          variant="default"
+        <Button
+          variant="primary"
           onClick={() => onSave(selectedIcon)}
         >
           <Check size={16} strokeWidth={2.25} />
-        </IconButton>
+        </Button>
       </DialogHeader>
       <div className="mt-6">
         <HorizontalPicker
