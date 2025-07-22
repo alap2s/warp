@@ -88,25 +88,41 @@ const GridUIManager = () => {
   }, []);
 
   React.useEffect(() => {
-    const myWarp = user ? warps.find(warp => warp.ownerId === user.uid) : null;
-    const otherWarps = user ? warps.filter(warp => warp.ownerId !== user.uid) : warps;
-    
+    if (screenSize.width === 0 || screenSize.height === 0) return;
+
     const TILE_WIDTH = 84;
     const TILE_HEIGHT = 84;
     const GAP = 16;
-    const TILES_PER_ROW = Math.floor((screenSize.width - GAP) / (TILE_WIDTH + GAP));
-    
-    const newPositions: { [key: string]: { x: number, y: number } } = {};
-    otherWarps.forEach((warp, index) => {
-      const row = Math.floor(index / TILES_PER_ROW);
-      const col = index % TILES_PER_ROW;
-      
-      const x = (screenSize.width - (TILES_PER_ROW * (TILE_WIDTH + GAP) - GAP)) / 2 + col * (TILE_WIDTH + GAP);
-      const y = screenSize.height / 2 + (row + 1) * (TILE_HEIGHT + GAP);
-      
-      newPositions[warp.id] = { x, y };
-    });
 
+    const layoutPattern = [
+      // Ring 1
+      { col: -1, row: 0 }, { col: 1, row: 0 },
+      // Ring 2
+      { col: -0.5, row: -1 }, { col: 0.5, row: -1 },
+      { col: -0.5, row: 1 }, { col: 0.5, row: 1 },
+      // Ring 3
+      { col: -2, row: 0 }, { col: 2, row: 0 },
+      // Ring 4
+      { col: -1, row: -2 }, { col: 0, row: -2 }, { col: 1, row: -2 },
+      { col: -1, row: 2 }, { col: 0, row: 2 }, { col: 1, row: 2 },
+    ];
+
+    const newPositions: { [key: string]: { x: number, y: number } } = {};
+    const otherWarps = user ? warps.filter(warp => warp.ownerId !== user.uid) : warps;
+
+    otherWarps.forEach((warp, index) => {
+      if (index < layoutPattern.length) {
+        const { col, row } = layoutPattern[index];
+
+        const x = (screenSize.width / 2) + col * (TILE_WIDTH + GAP) - (TILE_WIDTH / 2);
+        const y = (screenSize.height / 2) + row * (TILE_HEIGHT + GAP) - (TILE_HEIGHT / 2);
+        
+        if (x >= 0 && x <= screenSize.width - TILE_WIDTH && y >= 0 && y <= screenSize.height - TILE_HEIGHT) {
+          newPositions[warp.id] = { x, y };
+        }
+      }
+    });
+    
     setWarpPositions(newPositions);
   }, [warps, user, screenSize]);
 

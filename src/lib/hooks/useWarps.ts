@@ -21,6 +21,7 @@ export const useWarps = () => {
     
     setLoading(true);
     const allWarps = await fetchWarps();
+
     if (allWarps.length > 0) {
       const ownerIds = [...new Set(allWarps.map(warp => warp.ownerId))].filter(Boolean) as string[];
       const users = await getUsersByIds(ownerIds);
