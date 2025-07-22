@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { getWarps as fetchWarps, createWarp as addWarp, deleteWarp as removeWarp, getWarpsByOwner } from '@/lib/warp';
+import { getWarps as fetchWarps, createWarp as addWarp, deleteWarp as removeWarp, getWarpsByOwner, updateWarp as updateWarpInDb } from '@/lib/warp';
 import { useAuth } from '@/context/AuthContext';
 import { FormData } from '@/components/MakeWarpDialog';
 import { getUsersByIds } from '@/lib/user';
@@ -10,6 +10,7 @@ export const useWarps = () => {
   const { user } = useAuth();
   const [warps, setWarps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const refreshWarps = useCallback(async () => {
     if (!user) {
@@ -37,6 +38,7 @@ export const useWarps = () => {
 
   const createWarp = async (data: Omit<FormData, 'icon'> & { icon: string }) => {
     if (!user) return;
+    setSaving(true);
 
     // --- V1 Release: One warp per user ---
     // In the future, we can remove this block to allow multiple warps.
@@ -53,6 +55,14 @@ export const useWarps = () => {
     if (warpId) {
       await refreshWarps();
     }
+    setSaving(false);
+  };
+
+  const updateWarp = async (id: string, data: Partial<FormData>) => {
+    setSaving(true);
+    await updateWarpInDb(id, data);
+    await refreshWarps();
+    setSaving(false);
   };
 
   const deleteWarp = async (id: string) => {
@@ -60,5 +70,5 @@ export const useWarps = () => {
     await refreshWarps();
   };
 
-  return { warps, loading, refreshWarps, createWarp, deleteWarp };
+  return { warps, loading, saving, refreshWarps, createWarp, updateWarp, deleteWarp };
 }; 

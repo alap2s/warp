@@ -8,6 +8,7 @@ import { signInAnonymously } from '@/lib/auth';
 import { createUserProfile } from '@/lib/user';
 import ProfileDialog from '@/components/ProfileDialog';
 import { GridStateProvider, useGridState } from '@/context/GridStateContext';
+import { useWarps } from '@/lib/hooks/useWarps';
 
 const InteractiveGrid = dynamic(() => import('@/components/InteractiveGrid'), {
   ssr: false,
@@ -72,16 +73,17 @@ const OnboardingManager = () => {
     return <ProfileDialog initialData={null} onSave={handleProfileCreate} onClose={() => {}} onSizeChange={setProfileDialogSize} />;
   }
 
-  return null;
-}
+  return <InteractiveGrid />;
+};
 
-export default function Home() {
+const Home = () => {
+  const { warps, loading, saving, refreshWarps, createWarp, updateWarp, deleteWarp } = useWarps();
+
   return (
-    <div className="relative w-screen h-screen">
-      <GridStateProvider>
-        <InteractiveGrid />
-        <OnboardingManager />
-      </GridStateProvider>
-    </div>
-  );
-}
+    <GridStateProvider warps={warps} createWarp={createWarp} updateWarp={updateWarp} deleteWarp={deleteWarp} isSaving={saving}>
+      <OnboardingManager />
+    </GridStateProvider>
+  )
+};
+
+export default Home;

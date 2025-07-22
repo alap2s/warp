@@ -27,16 +27,14 @@ const formatTileDate = (date: Date) => {
 const WarpTile = ({ 
   warp, 
   username, 
-  onRemove,
   position,
   onClick,
   onSizeChange,
 }: { 
   warp: any, 
   username: string, 
-  onRemove: () => void,
   position?: { x: number, y: number },
-  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void,
+  onClick: (e: React.MouseEvent<HTMLDivElement>) => void,
   onSizeChange?: (size: { width: number, height: number } | null) => void,
 }) => {
   const { what, when, icon: Icon } = warp;
@@ -61,7 +59,7 @@ const WarpTile = ({
   const tileContent = (
     <div 
       className="w-[84px] h-[84px] bg-black border-2 border-white/40 rounded-[24px] p-4 flex flex-col items-center justify-between cursor-pointer"
-      onClick={onClick || onRemove}
+      onClick={onClick}
     >
       <div className="w-5 h-5 text-white">
         {Icon && <Icon size={20} />}

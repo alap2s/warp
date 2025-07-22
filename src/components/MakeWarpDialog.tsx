@@ -144,12 +144,14 @@ export type FormData = {
 export const MakeWarpDialog = ({
   onClose,
   onPost,
+  onUpdate,
   initialData,
   onDelete,
   onSizeChange,
 }: {
   onClose: () => void,
   onPost: (data: FormData) => void,
+  onUpdate: (data: FormData) => void,
   initialData?: {
     what: string;
     when: Date;
@@ -209,12 +211,17 @@ export const MakeWarpDialog = ({
   };
 
   const handlePost = () => {
-    onPost({
+    const data = {
       what: whatValue,
       when: whenValue,
       where: whereValue,
       icon: currentIconName,
-    });
+    };
+    if (initialData) {
+      onUpdate(data);
+    } else {
+      onPost(data);
+    }
   };
 
   const dayOptions = Array.from({ length: 7 }, (_, i) => {

@@ -4,7 +4,6 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useGridState } from '@/context/GridStateContext';
-import { useWarps } from '@/lib/hooks/useWarps';
 import { MakeWarpDialog, getIcon } from './MakeWarpDialog';
 import WarpTile from './WarpTile';
 import MeDialog from './MeDialog';
@@ -12,6 +11,7 @@ import UpdateAvatarDialog from './UpdateAvatarDialog';
 import SegmentedControl from './ui/SegmentedControl';
 import { Plus } from 'lucide-react';
 import OpenWarpDialog from './OpenWarpDialog';
+import LoadingDialog from './ui/LoadingDialog';
 
 const CreateWarpTile = ({ onClick }: { onClick: () => void }) => {
   const tileRef = React.useRef<HTMLDivElement>(null);
@@ -56,6 +56,7 @@ const GridUIManager = () => {
     setActiveWarp, 
     warpToEdit, 
     postWarp, 
+    updateWarp,
     closeMakeWarpDialog, 
     deleteWarp, 
     startEditWarp, 
@@ -65,9 +66,10 @@ const GridUIManager = () => {
     setDialogSize, 
     setMeDialogSize, 
     setCenterTileSize,
-    meDialogSize 
+    meDialogSize,
+    isLoading,
+    warps,
   } = useGridState();
-  const { warps } = useWarps();
   const [isUpdatingAvatar, setUpdatingAvatar] = React.useState(false);
   const [isSegmentedControlVisible, setSegmentedControlVisible] = React.useState(false);
   const segmentedControlRef = React.useRef<HTMLDivElement>(null);
@@ -137,12 +139,14 @@ const GridUIManager = () => {
   return (
     <div className="absolute inset-0 grid-ui-manager" onClick={handleGridClick}>
       <AnimatePresence>
+        {isLoading && <LoadingDialog />}
         {isMakeWarpDialogOpen && (
           <MakeWarpDialog
             key={warpToEdit ? 'edit' : 'new'}
             initialData={warpToEditWithDate}
             onClose={closeMakeWarpDialog}
             onPost={postWarp}
+            onUpdate={updateWarp}
             onDelete={warpToEdit ? deleteWarp : undefined}
             onSizeChange={setDialogSize}
           />
@@ -163,7 +167,7 @@ const GridUIManager = () => {
             key={activeWarp.id}
             warp={{...activeWarp, icon: getIcon(activeWarp.icon)}}
             username={activeWarp.user?.username || '...'}
-            onRemove={() => openWarpDialog()}
+            onClick={() => openWarpDialog()}
           />
         )}
       </AnimatePresence>
@@ -175,7 +179,7 @@ const GridUIManager = () => {
             key={myWarp.id}
             warp={{ ...myWarp, icon: getIcon(myWarp.icon) }}
             username={profile?.username || ''}
-            onRemove={() => startEditWarp(myWarp)}
+            onClick={() => startEditWarp(myWarp)}
             onSizeChange={setCenterTileSize}
           />
         ) : (
@@ -195,7 +199,6 @@ const GridUIManager = () => {
             key={warp.id}
             warp={{ ...warp, icon: IconComponent }}
             username={warp.user?.username || '...'}
-            onRemove={() => {}}
             position={position}
             onClick={(e) => {
               e.stopPropagation(); // Prevent the grid click from firing
