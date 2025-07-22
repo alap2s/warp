@@ -12,14 +12,24 @@ export const useWarps = () => {
   const [loading, setLoading] = useState(true);
 
   const refreshWarps = useCallback(async () => {
+    if (!user) {
+      setWarps([]);
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     const allWarps = await fetchWarps();
-    const ownerIds = allWarps.map(warp => warp.ownerId).filter((id, index, self) => self.indexOf(id) === index);
-    const users = await getUsersByIds(ownerIds);
-    const warpsWithUser = allWarps.map(warp => ({ ...warp, user: users[warp.ownerId] }));
-    setWarps(warpsWithUser);
+    if (allWarps.length > 0) {
+      const ownerIds = [...new Set(allWarps.map(warp => warp.ownerId))].filter(Boolean) as string[];
+      const users = await getUsersByIds(ownerIds);
+      const warpsWithUser = allWarps.map(warp => ({ ...warp, user: users[warp.ownerId] }));
+      setWarps(warpsWithUser);
+    } else {
+        setWarps([]);
+    }
     setLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     refreshWarps();

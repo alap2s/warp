@@ -3,7 +3,7 @@
 import React from 'react';
 import { IconButton } from './ui/IconButton';
 import { Button } from './ui/Button';
-import { Bell, BellOff, Trash2, X } from 'lucide-react';
+import { Bell, BellOff, Trash2 } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import Image from 'next/image';
 import NotificationToggle from './ui/NotificationToggle';
@@ -47,7 +47,6 @@ const MeDialog = ({
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={true}>
       <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
         <DialogHeader title={[userProfile.username]}>
-          <div className="flex items-start gap-2">
             <button onClick={onUpdateAvatar}>
               <Image
                 src={`/Thumbs/${userProfile.icon}`}
@@ -55,13 +54,8 @@ const MeDialog = ({
                 width={48}
                 height={48}
                 className="rounded-2xl"
-                style={{ height: 'auto' }}
               />
             </button>
-            <IconButton variant="ghost" onClick={onClose}>
-              <X size={16} strokeWidth={2.25} />
-            </IconButton>
-          </div>
         </DialogHeader>
         <hr className="border-white/20" />
         <div className="flex items-center justify-between">

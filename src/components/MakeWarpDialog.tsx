@@ -138,7 +138,7 @@ export type FormData = {
   what: string;
   when: Date;
   where: string;
-  icon: React.ComponentType<IconProps>;
+  icon: string;
 };
 
 export const MakeWarpDialog = ({
@@ -150,7 +150,12 @@ export const MakeWarpDialog = ({
 }: {
   onClose: () => void,
   onPost: (data: FormData) => void,
-  initialData?: FormData | null,
+  initialData?: {
+    what: string;
+    when: Date;
+    where: string;
+    icon: string;
+  } | null,
   onDelete?: () => void,
   onSizeChange?: (size: { width: number, height: number }) => void,
 }) => {
@@ -158,7 +163,7 @@ export const MakeWarpDialog = ({
   const [whatValue, setWhatValue] = useState<string>(initialData?.what || '');
   const [whenValue, setWhenValue] = useState<Date>(initialData?.when ? new Date(initialData.when) : getInitialWhenDate());
   const [whereValue, setWhereValue] = useState<string>(initialData?.where || '');
-  const [CurrentIcon, setCurrentIcon] = useState<React.ComponentType<IconProps>>(() => initialData?.icon || LineSquiggle);
+  const [currentIconName, setCurrentIconName] = useState<string>(initialData?.icon || 'LineSquiggle');
 
   useEffect(() => {
     if (!initialData) {
@@ -180,8 +185,9 @@ export const MakeWarpDialog = ({
   }, [initialData]);
 
   useEffect(() => {
-    const NewIcon = getIcon(whatValue);
-    setCurrentIcon(() => NewIcon);
+    const iconComponent = getIcon(whatValue);
+    const iconName = Object.keys(iconMap).find(key => iconMap[key] === iconComponent) || 'LineSquiggle';
+    setCurrentIconName(iconName);
   }, [whatValue]);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -207,7 +213,7 @@ export const MakeWarpDialog = ({
       what: whatValue,
       when: whenValue,
       where: whereValue,
-      icon: CurrentIcon,
+      icon: currentIconName,
     });
   };
 
@@ -216,6 +222,8 @@ export const MakeWarpDialog = ({
     date.setDate(date.getDate() + i);
     return date;
   });
+
+  const CurrentIcon = iconMap[currentIconName] || LineSquiggle;
 
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange}>

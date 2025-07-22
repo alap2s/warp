@@ -30,17 +30,32 @@ const WarpTile = ({
   onRemove,
   position,
   onClick,
+  onSizeChange,
 }: { 
   warp: any, 
   username: string, 
   onRemove: () => void,
   position?: { x: number, y: number },
   onClick?: (e: React.MouseEvent<HTMLDivElement>) => void,
+  onSizeChange?: (size: { width: number, height: number } | null) => void,
 }) => {
   const { what, when, icon: Icon } = warp;
-  
+  const tileRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (onSizeChange && tileRef.current) {
+      const { width, height } = tileRef.current.getBoundingClientRect();
+      onSizeChange({ width, height });
+    }
+    return () => {
+      if (onSizeChange) {
+        onSizeChange(null);
+      }
+    }
+  }, [onSizeChange]);
+
   // Firestore Timestamps have a toDate() method
-  const date = when && typeof when.toDate === 'function' ? when.toDate() : when;
+  const date = when && typeof when.toDate === 'function' ? when.toDate() : new Date(when);
   const dateLabel = formatTileDate(date);
 
   const tileContent = (
@@ -61,6 +76,7 @@ const WarpTile = ({
   if (position) {
     return (
       <motion.div
+        ref={tileRef}
         className="absolute"
         style={{ top: position.y, left: position.x }}
         initial={{ opacity: 0, scale: 0.8 }}
@@ -73,7 +89,8 @@ const WarpTile = ({
   }
 
   return (
-    <motion.div 
+    <motion.div
+      ref={tileRef}
       className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}

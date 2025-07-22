@@ -3,7 +3,7 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
-const Dialog = ({ children, onClose, onSizeChange, isModal = false, zIndex = 50 }: { 
+const Dialog = ({ children, onClose, onSizeChange, isModal = true, zIndex = 50 }: { 
   children: React.ReactNode, 
   onClose: () => void,
   onSizeChange?: (size: { width: number, height: number }) => void,
@@ -27,7 +27,7 @@ const Dialog = ({ children, onClose, onSizeChange, isModal = false, zIndex = 50 
   }, [onSizeChange]);
 
   const handleOverlayClick = () => {
-    if (!isModal) {
+    if (isModal) {
       onClose();
     }
   };

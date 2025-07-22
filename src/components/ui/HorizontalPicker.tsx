@@ -63,10 +63,9 @@ const HorizontalPicker = ({ onIconSelect, defaultValue }: HorizontalPickerProps)
               <Image
                 src={`/Thumbs/${seed}`}
                 alt="Avatar"
-                width={80}
-                height={80}
-                className="avatar-image"
-                style={{ height: 'auto' }}
+                width={0}
+                height={0}
+                className="avatar-image w-20 h-20"
               />
             </div>
           </SplideSlide>

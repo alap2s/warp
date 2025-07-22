@@ -1,4 +1,4 @@
-import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "./firebase";
 
 export const createWarp = async (data: { what: string; when: Date; where: string; icon: string; ownerId: string }) => {
@@ -69,5 +69,27 @@ export const deleteWarp = async (id: string) => {
     await deleteDoc(doc(db, "warps", id));
   } catch (error) {
     console.error("Error deleting warp:", error);
+  }
+};
+
+export const joinWarp = async (warpId: string, userId: string) => {
+  try {
+    const warpRef = doc(db, "warps", warpId);
+    await updateDoc(warpRef, {
+      participants: arrayUnion(userId)
+    });
+  } catch (error) {
+    console.error("Error joining warp:", error);
+  }
+};
+
+export const leaveWarp = async (warpId: string, userId: string) => {
+  try {
+    const warpRef = doc(db, "warps", warpId);
+    await updateDoc(warpRef, {
+      participants: arrayRemove(userId)
+    });
+  } catch (error) {
+    console.error("Error leaving warp:", error);
   }
 }; 

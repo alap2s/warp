@@ -15,6 +15,7 @@ interface GridStateContextType {
   dialogSize: DialogSize;
   profileDialogSize: DialogSize;
   meDialogSize: DialogSize;
+  centerTileSize: DialogSize;
   openMakeWarpDialog: () => void;
   closeMakeWarpDialog: () => void;
   openWarpDialog: () => void;
@@ -26,6 +27,7 @@ interface GridStateContextType {
   setDialogSize: (size: DialogSize) => void;
   setProfileDialogSize: (size: DialogSize) => void;
   setMeDialogSize: (size: DialogSize) => void;
+  setCenterTileSize: (size: DialogSize) => void;
   handlePost: (data: FormData) => void;
   handleCloseDialog: () => void;
   handleDelete: () => void;
@@ -51,6 +53,7 @@ export const GridStateProvider = ({ children }: { children: ReactNode }) => {
   const [dialogSize, setDialogSize] = useState<DialogSize>(null);
   const [profileDialogSize, setProfileDialogSize] = useState<DialogSize>(null);
   const [meDialogSize, setMeDialogSize] = useState<DialogSize>(null);
+  const [centerTileSize, setCenterTileSize] = useState<DialogSize>(null);
 
   const openMakeWarpDialog = () => {
     setWarpToEdit(null);
@@ -77,12 +80,11 @@ export const GridStateProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const postWarp = (data: FormData) => {
-    const iconName = Object.keys(data.icon)[0] || 'LineSquiggle';
-    const IconComponent = (data.icon as any)[iconName];
-    createWarp({ ...data, icon: iconName });
-    setActiveWarp({ ...data, icon: IconComponent });
+    const newWarp = { ...data };
+    createWarp(newWarp);
+    setActiveWarp(newWarp);
+    setWarpToEdit(newWarp);
     setMakeWarpDialogOpen(false);
-    setWarpToEdit(null);
   };
 
   const startEditWarp = (warp: Warp) => {
@@ -109,6 +111,7 @@ export const GridStateProvider = ({ children }: { children: ReactNode }) => {
     dialogSize,
     profileDialogSize,
     meDialogSize,
+    centerTileSize,
     openMakeWarpDialog,
     closeMakeWarpDialog,
     openWarpDialog,
@@ -120,6 +123,7 @@ export const GridStateProvider = ({ children }: { children: ReactNode }) => {
     setDialogSize,
     setProfileDialogSize,
     setMeDialogSize,
+    setCenterTileSize,
     handlePost: postWarp,
     handleCloseDialog: closeMakeWarpDialog,
     handleDelete: deleteWarpAndCloseDialog,

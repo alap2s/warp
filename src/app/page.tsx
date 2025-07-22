@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import WelcomeDialog from '@/components/WelcomeDialog';
 import { signInAnonymously } from '@/lib/auth';
@@ -16,9 +16,23 @@ const InteractiveGrid = dynamic(() => import('@/components/InteractiveGrid'), {
 const OnboardingManager = () => {
   const { user, profile, loading, refreshProfile } = useAuth();
   const { setDialogSize, setProfileDialogSize } = useGridState();
+  const [welcomeDismissed, setWelcomeDismissed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('welcomeShown') === 'true';
+    }
+    return false;
+  });
 
   const handleSignIn = async () => {
     await signInAnonymously();
+  };
+
+  const handleWelcomeNext = () => {
+    sessionStorage.setItem('welcomeShown', 'true');
+    setWelcomeDismissed(true);
+    if (!user) {
+      handleSignIn();
+    }
   };
 
   const handleProfileCreate = async (data: { username: string; icon: string }) => {
@@ -29,14 +43,10 @@ const OnboardingManager = () => {
   };
 
   useEffect(() => {
-    // When the user's auth or profile state changes, we clean up the depressions
-    // left by the onboarding dialogs.
     if (user) {
-      // User has signed in, so we can remove the welcome dialog's depression.
       setDialogSize(null);
     }
     if (profile) {
-      // User has created a profile, so we can remove the profile dialog's depression.
       setProfileDialogSize(null);
     }
   }, [user, profile, setDialogSize, setProfileDialogSize]);
@@ -50,8 +60,12 @@ const OnboardingManager = () => {
     );
   }
 
+  if (!welcomeDismissed) {
+    return <WelcomeDialog onNext={handleWelcomeNext} onClose={() => {}} onSizeChange={setDialogSize} />;
+  }
+
   if (!user) {
-    return <WelcomeDialog onNext={handleSignIn} onClose={() => {}} onSizeChange={setDialogSize} />;
+    return <WelcomeDialog onNext={handleWelcomeNext} onClose={() => {}} onSizeChange={setDialogSize} />;
   }
 
   if (!profile) {

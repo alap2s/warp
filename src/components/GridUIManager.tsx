@@ -12,26 +12,39 @@ import UpdateAvatarDialog from './UpdateAvatarDialog';
 import SegmentedControl from './ui/SegmentedControl';
 import { Plus } from 'lucide-react';
 import OpenWarpDialog from './OpenWarpDialog';
-import { calculateConcentricRingPositions } from '@/lib/utils';
 
-const CreateWarpTile = ({ onClick }: { onClick: () => void }) => (
-  <motion.div
-    className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-    initial={{ opacity: 0, scale: 0.8 }}
-    animate={{ opacity: 1, scale: 1 }}
-    exit={{ opacity: 0, scale: 0.8 }}
-    transition={{ type: 'spring', damping: 15, stiffness: 200 }}
-  >
-    <div
-      className="w-[84px] h-[84px] bg-black border-2 border-white/40 rounded-[24px] p-4 flex flex-col items-center justify-center cursor-pointer"
-      onClick={onClick}
+const CreateWarpTile = ({ onClick }: { onClick: () => void }) => {
+  const tileRef = React.useRef<HTMLDivElement>(null);
+  const { setCenterTileSize } = useGridState();
+
+  React.useEffect(() => {
+    if (tileRef.current) {
+      const { width, height } = tileRef.current.getBoundingClientRect();
+      setCenterTileSize({ width, height });
+    }
+    return () => setCenterTileSize(null);
+  }, [setCenterTileSize]);
+  
+  return (
+    <motion.div
+      ref={tileRef}
+      className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ type: 'spring', damping: 15, stiffness: 200 }}
     >
-      <div className="w-8 h-8 text-white/80">
-        <Plus size={32} strokeWidth={1.5} />
+      <div
+        className="w-[84px] h-[84px] bg-black border-2 border-white/40 rounded-[24px] p-4 flex flex-col items-center justify-center cursor-pointer"
+        onClick={onClick}
+      >
+        <div className="w-8 h-8 text-white/80">
+          <Plus size={32} strokeWidth={1.5} />
+        </div>
       </div>
-    </div>
-  </motion.div>
-);
+    </motion.div>
+  )
+};
 
 
 const GridUIManager = () => {
@@ -51,6 +64,7 @@ const GridUIManager = () => {
     closeWarpDialog,
     setDialogSize, 
     setMeDialogSize, 
+    setCenterTileSize,
     meDialogSize 
   } = useGridState();
   const { warps } = useWarps();
@@ -95,7 +109,7 @@ const GridUIManager = () => {
   }, [warps, user, screenSize]);
 
 
-  const isAnyDialogOpen = isMakeWarpDialogOpen || !profile || !!meDialogSize || isOpenWarpDialogOpen;
+  const isAnyDialogOpen = isMakeWarpDialogOpen || !profile || isOpenWarpDialogOpen;
 
   const handleAvatarSave = (newIcon: string) => {
     setUpdatingAvatar(false);
@@ -113,12 +127,12 @@ const GridUIManager = () => {
   // Convert Firestore Timestamp to Date for MakeWarpDialog
   const warpToEditWithDate = warpToEdit ? {
     ...warpToEdit,
-    when: warpToEdit.when.toDate(),
+    when: warpToEdit.when.toDate ? warpToEdit.when.toDate() : new Date(warpToEdit.when),
   } : null;
   
   const myWarp = user ? warps.find(warp => warp.ownerId === user.uid) : null;
-  const otherWarps = user ? warps.filter(warp => warp.ownerId !== user.uid) : warps;
-
+  const otherWarps = user && profile ? warps.filter(warp => warp.ownerId !== user.uid) : [];
+  const showTiles = !isMakeWarpDialogOpen && !isOpenWarpDialogOpen && !meDialogSize;
 
   return (
     <div className="absolute inset-0 grid-ui-manager" onClick={handleGridClick}>
@@ -155,13 +169,14 @@ const GridUIManager = () => {
       </AnimatePresence>
 
       {/* If no other warp is active, show the user's own warp or the create tile */}
-      {!activeWarp && (
+      {!activeWarp && showTiles && (
         myWarp ? (
           <WarpTile
             key={myWarp.id}
             warp={{ ...myWarp, icon: getIcon(myWarp.icon) }}
             username={profile?.username || ''}
             onRemove={() => startEditWarp(myWarp)}
+            onSizeChange={setCenterTileSize}
           />
         ) : (
           profile && <CreateWarpTile onClick={openMakeWarpDialog} />
@@ -169,7 +184,7 @@ const GridUIManager = () => {
       )}
 
       {/* Render all other warps on the grid */}
-      {otherWarps.map(warp => {
+      {showTiles && profile && otherWarps.map(warp => {
         // Hide the tile if it's the currently active one (since it's in the center)
         if (activeWarp && activeWarp.id === warp.id) return null;
 
@@ -185,6 +200,7 @@ const GridUIManager = () => {
             onClick={(e) => {
               e.stopPropagation(); // Prevent the grid click from firing
               setActiveWarp(warp);
+              openWarpDialog();
             }}
           />
         );
