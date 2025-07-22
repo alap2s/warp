@@ -73,7 +73,7 @@ const OnboardingManager = () => {
     return <ProfileDialog initialData={null} onSave={handleProfileCreate} onClose={() => {}} onSizeChange={setProfileDialogSize} />;
   }
 
-  return <InteractiveGrid />;
+  return null;
 };
 
 const Home = () => {
@@ -81,6 +81,7 @@ const Home = () => {
 
   return (
     <GridStateProvider warps={warps} createWarp={createWarp} updateWarp={updateWarp} deleteWarp={deleteWarp} isSaving={saving}>
+      <InteractiveGrid />
       <OnboardingManager />
     </GridStateProvider>
   )

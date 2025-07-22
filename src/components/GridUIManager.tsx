@@ -12,6 +12,7 @@ import SegmentedControl from './ui/SegmentedControl';
 import { Plus } from 'lucide-react';
 import OpenWarpDialog from './OpenWarpDialog';
 import LoadingDialog from './ui/LoadingDialog';
+import { deleteUserAccount, updateUserProfile } from '@/lib/user';
 
 const CreateWarpTile = ({ onClick }: { onClick: () => void }) => {
   const tileRef = React.useRef<HTMLDivElement>(null);
@@ -48,7 +49,7 @@ const CreateWarpTile = ({ onClick }: { onClick: () => void }) => {
 
 
 const GridUIManager = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { 
     isMakeWarpDialogOpen, 
     isOpenWarpDialogOpen,
@@ -66,12 +67,14 @@ const GridUIManager = () => {
     setDialogSize, 
     setMeDialogSize, 
     setCenterTileSize,
+    setUpdateAvatarDialogSize,
     meDialogSize,
     isLoading,
     warps,
   } = useGridState();
   const [isUpdatingAvatar, setUpdatingAvatar] = React.useState(false);
   const [isSegmentedControlVisible, setSegmentedControlVisible] = React.useState(false);
+  const [segmentedControlSelection, setSegmentedControlSelection] = React.useState('Everyone');
   const segmentedControlRef = React.useRef<HTMLDivElement>(null);
   const [warpPositions, setWarpPositions] = React.useState<{ [key: string]: { x: number, y: number } }>({});
   const [screenSize, setScreenSize] = React.useState({ width: 0, height: 0 });
@@ -127,10 +130,15 @@ const GridUIManager = () => {
   }, [warps, user, screenSize]);
 
 
-  const isAnyDialogOpen = isMakeWarpDialogOpen || !profile || isOpenWarpDialogOpen;
+  const isAnyDialogOpen = isMakeWarpDialogOpen || !profile || isOpenWarpDialogOpen || isUpdatingAvatar;
 
-  const handleAvatarSave = (newIcon: string) => {
+  const handleAvatarSave = async (newIcon: string) => {
+    if (user) {
+      await updateUserProfile(user.uid, { icon: newIcon });
+      await refreshProfile();
+    }
     setUpdatingAvatar(false);
+    setUpdateAvatarDialogSize(null);
     setMeDialogSize({ width: 300, height: 557 });
   };
 
@@ -150,7 +158,7 @@ const GridUIManager = () => {
   
   const myWarp = user ? warps.find(warp => warp.ownerId === user.uid) : null;
   const otherWarps = user && profile ? warps.filter(warp => warp.ownerId !== user.uid) : [];
-  const showTiles = !isMakeWarpDialogOpen && !isOpenWarpDialogOpen && !meDialogSize;
+  const showTiles = !isMakeWarpDialogOpen && !isOpenWarpDialogOpen && !meDialogSize && !isUpdatingAvatar;
 
   return (
     <div className="absolute inset-0 grid-ui-manager" onClick={handleGridClick}>
@@ -233,7 +241,10 @@ const GridUIManager = () => {
               userProfile={profile}
               onClose={() => setMeDialogSize(null)}
               onSizeChange={setMeDialogSize}
-              onUpdateAvatar={() => setUpdatingAvatar(true)}
+              onUpdateAvatar={() => {
+                setMeDialogSize(null);
+                setUpdatingAvatar(true);
+              }}
               onDeleteAccount={() => setMeDialogSize(null)}
             />
           )}
@@ -246,13 +257,15 @@ const GridUIManager = () => {
           onClose={() => {
             setUpdatingAvatar(false);
             setMeDialogSize({ width: 300, height: 557 });
+            setUpdateAvatarDialogSize(null);
           }}
+          onSizeChange={setUpdateAvatarDialogSize}
         />
       )}
       <AnimatePresence onExitComplete={() => setSegmentedControlVisible(false)}>
         {!isAnyDialogOpen && profile && (
           <motion.div
-            className="absolute bottom-12 left-1/2 -translate-x-1/2 z-50"
+            className="absolute bottom-[20px] left-1/2 -translate-x-1/2 z-50"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
@@ -262,7 +275,9 @@ const GridUIManager = () => {
             <SegmentedControl
               ref={segmentedControlRef}
               options={['Everyone', 'Friends', 'Me']}
+              value={segmentedControlSelection}
               onSelect={(option) => {
+                setSegmentedControlSelection(option);
                 if (option === 'Me') {
                   setMeDialogSize({ width: 300, height: 557 });
                 } else {

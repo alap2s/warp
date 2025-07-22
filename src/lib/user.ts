@@ -11,6 +11,7 @@ export const createUserProfile = async (uid: string, data: { username: string; i
     });
   } catch (error) {
     console.error("Error creating user profile:", error);
+    throw new Error('Failed to create user profile. Please try again.');
   }
 };
 
@@ -18,14 +19,19 @@ export const getUsersByIds = async (uids: string[]) => {
   if (uids.length === 0) {
     return {};
   }
-  const usersRef = collection(db, "users");
-  const q = query(usersRef, where('uid', 'in', uids));
-  const querySnapshot = await getDocs(q);
-  const users: { [key: string]: any } = {};
-  querySnapshot.forEach((doc) => {
-    users[doc.id] = doc.data();
-  });
-  return users;
+  try {
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where('uid', 'in', uids));
+    const querySnapshot = await getDocs(q);
+    const users: { [key: string]: any } = {};
+    querySnapshot.forEach((doc) => {
+      users[doc.id] = doc.data();
+    });
+    return users;
+  } catch (error) {
+    console.error("Error getting user profiles by IDs:", error);
+    throw new Error('Failed to retrieve user profiles. Please try again.');
+  }
 };
 
 export const getUserProfile = async (uid: string) => {
@@ -39,7 +45,7 @@ export const getUserProfile = async (uid: string) => {
     }
   } catch (error) {
     console.error("Error getting user profile:", error);
-    return null;
+    throw new Error('Failed to get user profile. Please try again.');
   }
 };
 
@@ -49,6 +55,7 @@ export const updateUserProfile = async (uid: string, data: { username?: string; 
     await updateDoc(docRef, data);
   } catch (error) {
     console.error("Error updating user profile:", error);
+    throw new Error('Failed to update user profile. Please try again.');
   }
 };
 
@@ -57,14 +64,14 @@ export const deleteUserProfile = async (uid: string) => {
     await deleteDoc(doc(db, "users", uid));
   } catch (error) {
     console.error("Error deleting user profile:", error);
+    throw new Error('Failed to delete user profile. Please try again.');
   }
 };
 
 export const deleteUserAccount = async () => {
   const user = auth.currentUser;
   if (!user) {
-    console.error("No user is signed in to delete.");
-    return;
+    throw new Error("No user is signed in to delete.");
   }
 
   try {
@@ -83,7 +90,6 @@ export const deleteUserAccount = async () => {
     console.log("User account deleted successfully.");
   } catch (error) {
     console.error("Error deleting user account:", error);
-    // This might require the user to re-authenticate.
-    // We can handle that if it becomes an issue.
+    throw new Error('Failed to delete user account. This may require you to sign in again.');
   }
 }; 

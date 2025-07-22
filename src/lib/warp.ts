@@ -5,13 +5,13 @@ export const createWarp = async (data: { what: string; when: Date; where: string
   try {
     const docRef = await addDoc(collection(db, "warps"), {
       ...data,
-      when: data.when, // Firestore will convert this to a Timestamp
+      when: data.when, 
       createdAt: serverTimestamp(),
     });
     return docRef.id;
   } catch (error) {
     console.error("Error creating warp:", error);
-    return null;
+    throw new Error('Failed to create warp. Please try again.');
   }
 };
 
@@ -23,7 +23,7 @@ export const getWarps = async () => {
     return warpsList;
   } catch (error) {
     console.error("Error getting warps:", error);
-    return [];
+    throw new Error('Failed to get warps. Please try again.');
   }
 };
 
@@ -36,7 +36,7 @@ export const getWarpsByOwner = async (ownerId: string) => {
     return warpsList;
   } catch (error) {
     console.error("Error getting warps by owner:", error);
-    return [];
+    throw new Error('Failed to get warps. Please try again.');
   }
 };
 
@@ -51,7 +51,7 @@ export const getWarp = async (id: string) => {
     }
   } catch (error) {
     console.error("Error getting warp:", error);
-    return null;
+    throw new Error('Failed to get warp. Please try again.');
   }
 };
 
@@ -61,6 +61,7 @@ export const updateWarp = async (id: string, data: Partial<{ what: string; when:
     await updateDoc(warpRef, data);
   } catch (error) {
     console.error("Error updating warp:", error);
+    throw new Error('Failed to update warp. Please try again.');
   }
 };
 
@@ -69,6 +70,7 @@ export const deleteWarp = async (id: string) => {
     await deleteDoc(doc(db, "warps", id));
   } catch (error) {
     console.error("Error deleting warp:", error);
+    throw new Error('Failed to delete warp. Please try again.');
   }
 };
 
@@ -80,6 +82,7 @@ export const joinWarp = async (warpId: string, userId: string) => {
     });
   } catch (error) {
     console.error("Error joining warp:", error);
+    throw new Error('Failed to join warp. Please try again.');
   }
 };
 
@@ -91,5 +94,6 @@ export const leaveWarp = async (warpId: string, userId: string) => {
     });
   } catch (error) {
     console.error("Error leaving warp:", error);
+    throw new Error('Failed to leave warp. Please try again.');
   }
 }; 

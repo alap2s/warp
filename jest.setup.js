@@ -1,5 +1,10 @@
 // jest.setup.js
-import '@testing-library/jest-dom'
+import 'whatwg-fetch';
+import '@testing-library/jest-dom';
+
+global.setImmediate = (callback) => {
+  callback();
+};
 
 // Mock for ResizeObserver
 class ResizeObserver {
@@ -42,4 +47,25 @@ HTMLCanvasElement.prototype.getContext = () => {
     rect: jest.fn(),
     clip: jest.fn(),
   };
-}; 
+};
+
+jest.mock('@/context/AuthContext', () => ({
+  useAuth: () => ({
+    user: { uid: 'test-user-id' },
+    profile: { username: 'test-user', icon: 'test-icon' },
+    loading: false,
+    refreshProfile: jest.fn(),
+  }),
+}));
+
+jest.mock('@splidejs/react-splide', () => ({
+  Splide: ({ children }) => <div>{children}</div>,
+  SplideSlide: ({ children }) => <div>{children}</div>,
+}));
+
+jest.mock('next/image', () => ({
+  __esModule: true,
+  default: (props) => {
+    return <img {...props} />;
+  },
+})); 

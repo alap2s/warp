@@ -16,6 +16,7 @@ interface GridStateContextType {
   dialogSize: DialogSize;
   profileDialogSize: DialogSize;
   meDialogSize: DialogSize;
+  updateAvatarDialogSize: DialogSize;
   centerTileSize: DialogSize;
   warps: Warp[];
   openMakeWarpDialog: () => void;
@@ -30,6 +31,7 @@ interface GridStateContextType {
   setDialogSize: (size: DialogSize) => void;
   setProfileDialogSize: (size: DialogSize) => void;
   setMeDialogSize: (size: DialogSize) => void;
+  setUpdateAvatarDialogSize: (size: DialogSize) => void;
   setCenterTileSize: (size: DialogSize) => void;
 }
 
@@ -66,6 +68,7 @@ export const GridStateProvider = ({
   const [dialogSize, setDialogSize] = useState<DialogSize>(null);
   const [profileDialogSize, setProfileDialogSize] = useState<DialogSize>(null);
   const [meDialogSize, setMeDialogSize] = useState<DialogSize>(null);
+  const [updateAvatarDialogSize, setUpdateAvatarDialogSize] = useState<DialogSize>(null);
   const [centerTileSize, setCenterTileSize] = useState<DialogSize>(null);
 
   const openMakeWarpDialog = () => {
@@ -93,6 +96,7 @@ export const GridStateProvider = ({
     const newWarp = { ...data };
     await createWarp(newWarp);
     setMakeWarpDialogOpen(false);
+    setDialogSize(null);
   };
 
   const updateWarp = async (data: FormData) => {
@@ -129,6 +133,7 @@ export const GridStateProvider = ({
     dialogSize,
     profileDialogSize,
     meDialogSize,
+    updateAvatarDialogSize,
     centerTileSize,
     warps,
     openMakeWarpDialog,
@@ -143,6 +148,7 @@ export const GridStateProvider = ({
     setDialogSize,
     setProfileDialogSize,
     setMeDialogSize,
+    setUpdateAvatarDialogSize,
     setCenterTileSize,
   };
 

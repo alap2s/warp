@@ -1,14 +1,21 @@
 'use client';
 
-import React, { useState, forwardRef } from 'react';
+import React, { useState, forwardRef, useEffect } from 'react';
 
 interface SegmentedControlProps {
   options: string[];
   onSelect: (option: string) => void;
+  value?: string;
 }
 
-const SegmentedControl = forwardRef<HTMLDivElement, SegmentedControlProps>(({ options, onSelect }, ref) => {
-  const [selected, setSelected] = useState(options[0]);
+const SegmentedControl = forwardRef<HTMLDivElement, SegmentedControlProps>(({ options, onSelect, value }, ref) => {
+  const [selected, setSelected] = useState(value || options[0]);
+
+  useEffect(() => {
+    if (value) {
+      setSelected(value);
+    }
+  }, [value]);
 
   const handleSelect = (option: string) => {
     setSelected(option);

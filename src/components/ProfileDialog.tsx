@@ -5,21 +5,19 @@ import { IconButton } from './ui/IconButton';
 import { Input } from './ui/Input';
 import { Check, AtSign } from 'lucide-react';
 import Dialog from './ui/Dialog';
-import HorizontalPicker from './ui/HorizontalPicker';
+import ThumbavatarSelector from './ui/ThumbavatarSelector';
 
 export const ProfileDialog = ({
   initialData,
   onSave,
   onClose,
   onSizeChange,
-  isModal,
   children,
 }: {
   initialData: { username: string; icon: string } | null;
   onSave: (data: { username:string; icon: string }) => void;
   onClose: () => void;
   onSizeChange?: (size: { width: number, height: number }) => void;
-  isModal?: boolean;
   children?: React.ReactNode;
 }) => {
   const usernameInputRef = useRef<HTMLInputElement>(null);
@@ -38,14 +36,14 @@ export const ProfileDialog = ({
 
   if (children) {
     return (
-      <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={isModal}>
+      <Dialog onClose={onClose} onSizeChange={onSizeChange}>
         {children}
       </Dialog>
     );
   }
 
   return (
-    <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={isModal}>
+    <Dialog onClose={onClose} onSizeChange={onSizeChange}>
       <div className="flex items-start justify-between">
         <div className="dialog-title">
           <p>Be</p>
@@ -59,13 +57,6 @@ export const ProfileDialog = ({
       </div>
 
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col items-center">
-          <HorizontalPicker
-            onIconSelect={handleIconSelect}
-            defaultValue={initialData?.icon}
-          />
-          <p className="text-xs font-medium text-white/40 mt-1">Choose your thumbavatar</p>
-        </div>
         <div className="relative">
           <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" size={16} strokeWidth={2.25} />
           <Input
@@ -79,6 +70,13 @@ export const ProfileDialog = ({
               }
             }}
             className="pl-10"
+          />
+        </div>
+        <div className="flex flex-col items-center">
+          <p className="text-xs font-medium text-white/40 mt-1">Choose your thumbavatar</p>
+          <ThumbavatarSelector
+            onIconSelect={handleIconSelect}
+            defaultValue={selectedIconSeed}
           />
         </div>
       </div>

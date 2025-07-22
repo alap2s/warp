@@ -47,12 +47,12 @@ const MeDialog = ({
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={true}>
       <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
         <DialogHeader title={[userProfile.username]}>
-            <button onClick={onUpdateAvatar}>
+            <button onClick={onUpdateAvatar} className="overflow-hidden rounded-2xl">
               <Image
                 src={`/Thumbs/${userProfile.icon}`}
                 alt="Avatar"
-                width={48}
-                height={48}
+                width={60}
+                height={60}
                 className="rounded-2xl"
               />
             </button>

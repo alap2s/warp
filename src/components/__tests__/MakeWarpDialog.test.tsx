@@ -20,9 +20,10 @@ const formatDayOption = (date: Date) => {
 
 describe('MakeWarpDialog', () => {
   const mockOnClose = jest.fn();
+  const mockOnSave = jest.fn();
 
   beforeEach(() => {
-    render(<MakeWarpDialog onClose={mockOnClose} />);
+    render(<MakeWarpDialog onClose={mockOnClose} onSave={mockOnSave} />);
   });
 
   it('renders without crashing', () => {
