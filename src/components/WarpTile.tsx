@@ -2,27 +2,16 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FormData } from './MakeWarpDialog';
+import { getIcon } from './MakeWarpDialog';
+import { formatShortDate } from '@/lib/utils';
 
-const formatTileDate = (date: Date) => {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const tileDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-  if (today.getTime() === tileDate.getTime()) {
-    return "Today";
-  }
-  
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  if (tomorrow.getTime() === tileDate.getTime()) {
-    return "Tomorrow";
-  }
-
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  return `${month}/${day}`;
-};
+interface WarpTileProps {
+  warp: any;
+  username: string;
+  position?: { x: number; y: number };
+  onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+  onSizeChange?: (size: { width: number; height: number } | null) => void;
+}
 
 const WarpTile = ({ 
   warp, 
@@ -30,13 +19,7 @@ const WarpTile = ({
   position,
   onClick,
   onSizeChange,
-}: { 
-  warp: any, 
-  username: string, 
-  position?: { x: number, y: number },
-  onClick: (e: React.MouseEvent<HTMLDivElement>) => void,
-  onSizeChange?: (size: { width: number, height: number } | null) => void,
-}) => {
+}: WarpTileProps) => {
   const { what, when, icon: Icon } = warp;
   const tileRef = React.useRef<HTMLDivElement>(null);
 
@@ -53,8 +36,8 @@ const WarpTile = ({
   }, [onSizeChange]);
 
   // Firestore Timestamps have a toDate() method
-  const date = when && typeof when.toDate === 'function' ? when.toDate() : new Date(when);
-  const dateLabel = formatTileDate(date);
+  const date = warp.when.toDate();
+  const dateLabel = formatShortDate(date);
 
   const tileContent = (
     <div 

@@ -1,10 +1,27 @@
-import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
 import { db } from "./firebase";
+
+export interface UserProfile {
+  username: string;
+  avatar: string;
+}
+
+export interface Warp {
+  id: string;
+  what: string;
+  when: Timestamp;
+  where: string;
+  icon: string;
+  ownerId: string;
+  participants: string[];
+  user?: UserProfile;
+}
 
 export const createWarp = async (data: { what: string; when: Date; where: string; icon: string; ownerId: string }) => {
   try {
     const docRef = await addDoc(collection(db, "warps"), {
       ...data,
+      participants: [],
       when: data.when, 
       createdAt: serverTimestamp(),
     });
