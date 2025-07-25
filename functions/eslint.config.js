@@ -13,6 +13,9 @@ module.exports = [
     rules: {
       "quotes": ["error", "double"],
       "import/no-unresolved": 0,
+      "max-len": "off",
+      "no-invalid-this": "off",
+      "camelcase": "off",
     },
   },
 ];

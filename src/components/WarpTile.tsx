@@ -11,6 +11,8 @@ interface WarpTileProps {
   position?: { x: number; y: number };
   onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
   onSizeChange?: (size: { width: number; height: number } | null) => void;
+  isNew?: boolean;
+  joinerCount?: number;
 }
 
 const WarpTile = ({ 
@@ -19,6 +21,8 @@ const WarpTile = ({
   position,
   onClick,
   onSizeChange,
+  isNew,
+  joinerCount,
 }: WarpTileProps) => {
   const { what, when, icon: Icon } = warp;
   const tileRef = React.useRef<HTMLDivElement>(null);
@@ -44,6 +48,17 @@ const WarpTile = ({
       className="w-[84px] h-[84px] bg-black border-2 border-white/40 rounded-[24px] p-4 flex flex-col items-center justify-between cursor-pointer"
       onClick={onClick}
     >
+      <div className="absolute -top-2 -right-2">
+        {joinerCount && joinerCount > 0 ? (
+          <div className="w-6 h-6 bg-black border-2 border-white/40 rounded-full flex items-center justify-center">
+            <p className="text-white text-[10px] font-bold">{joinerCount}</p>
+          </div>
+        ) : isNew ? (
+          <div className="bg-white rounded-full px-2 py-1">
+            <p className="text-black text-[10px] font-bold">New</p>
+          </div>
+        ) : null}
+      </div>
       <div className="w-5 h-5 text-white">
         {Icon && <Icon size={20} />}
       </div>

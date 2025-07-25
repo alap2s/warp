@@ -14,6 +14,8 @@ import OpenWarpDialog from './OpenWarpDialog';
 import LoadingDialog from './ui/LoadingDialog';
 import { deleteUserAccount, updateUserProfile } from '@/lib/user';
 import { useWarps } from '@/lib/hooks/useWarps';
+import { useNotifications } from '@/lib/hooks/useNotifications';
+import { markNotificationsAsRead } from '@/lib/warp';
 
 const CreateWarpTile = ({ onClick }: { onClick: () => void }) => {
   const tileRef = React.useRef<HTMLDivElement>(null);
@@ -51,6 +53,7 @@ const CreateWarpTile = ({ onClick }: { onClick: () => void }) => {
 
 const GridUIManager = () => {
   const { user, profile, refreshProfile } = useAuth();
+  const { notifications } = useNotifications(user?.uid || null);
   const { 
     isMakeWarpDialogOpen, 
     isOpenWarpDialogOpen,
@@ -177,6 +180,15 @@ const GridUIManager = () => {
     }
   }
 
+  const handleWarpClick = (warp: any) => {
+    setActiveWarp(warp);
+    openWarpDialog();
+    const relevantNotifications = notifications.filter(n => n.warpId === warp.id);
+    if (relevantNotifications.length > 0) {
+      markNotificationsAsRead(user!.uid, relevantNotifications.map(n => n.id));
+    }
+  };
+
   // Convert Firestore Timestamp to Date for MakeWarpDialog
   const warpToEditWithDate = warpToEdit ? {
     ...warpToEdit,
@@ -219,7 +231,9 @@ const GridUIManager = () => {
             key={activeWarp.id}
             warp={{...activeWarp, icon: getIcon(activeWarp.icon)}}
             username={activeWarp.user?.username || '...'}
-            onClick={() => openWarpDialog()}
+            onClick={() => handleWarpClick(activeWarp)}
+            isNew={notifications.some(n => n.warpId === activeWarp.id && n.type === 'new_warp')}
+            joinerCount={notifications.filter(n => n.warpId === activeWarp.id && n.type === 'warp_join').length}
           />
         )}
       </AnimatePresence>
@@ -231,11 +245,10 @@ const GridUIManager = () => {
             key={myWarp.id}
             warp={{ ...myWarp, icon: getIcon(myWarp.icon) }}
             username={profile?.username || ''}
-            onClick={() => {
-              setActiveWarp(myWarp);
-              openWarpDialog();
-            }}
+            onClick={() => handleWarpClick(myWarp)}
             onSizeChange={setCenterTileSize}
+            isNew={notifications.some(n => n.warpId === myWarp.id && n.type === 'new_warp')}
+            joinerCount={notifications.filter(n => n.warpId === myWarp.id && n.type === 'warp_join').length}
           />
         ) : (
           profile && <CreateWarpTile onClick={openMakeWarpDialog} />
@@ -257,9 +270,10 @@ const GridUIManager = () => {
             position={position}
             onClick={(e) => {
               e.stopPropagation(); // Prevent the grid click from firing
-              setActiveWarp(warp);
-              openWarpDialog();
+              handleWarpClick(warp);
             }}
+            isNew={notifications.some(n => n.warpId === warp.id && n.type === 'new_warp')}
+            joinerCount={notifications.filter(n => n.warpId === warp.id && n.type === 'warp_join').length}
           />
         );
       })}

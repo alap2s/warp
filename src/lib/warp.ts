@@ -41,18 +41,18 @@ export const createNotification = async (
   }
 };
 
-export const markNotificationsAsRead = async (userId: string) => {
+export const markNotificationsAsRead = async (userId: string, notificationIds: string[]) => {
+  if (!userId || notificationIds.length === 0) {
+    return;
+  }
+  
   try {
-    const q = query(
-      collection(db, 'notifications'),
-      where('userId', '==', userId),
-      where('read', '==', false)
-    );
-    const querySnapshot = await getDocs(q);
     const batch = [];
-    querySnapshot.forEach((doc) => {
-      batch.push(updateDoc(doc.ref, { read: true }));
+    notificationIds.forEach((notificationId) => {
+      const notificationRef = doc(db, 'notifications', notificationId);
+      batch.push(updateDoc(notificationRef, { read: true }));
     });
+
     await Promise.all(batch);
   } catch (error) {
     console.error('Error marking notifications as read:', error);
