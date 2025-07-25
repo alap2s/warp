@@ -8,21 +8,17 @@ import Dialog from './ui/Dialog';
 import ThumbavatarSelector from './ui/ThumbavatarSelector';
 
 export const ProfileDialog = ({
-  initialData,
   onSave,
   onClose,
   onSizeChange,
-  children,
 }: {
-  initialData: { username: string; icon: string } | null;
   onSave: (data: { username:string; icon: string }) => void;
   onClose: () => void;
   onSizeChange?: (size: { width: number, height: number }) => void;
-  children?: React.ReactNode;
 }) => {
   const usernameInputRef = useRef<HTMLInputElement>(null);
-  const [username, setUsername] = useState(initialData?.username || '');
-  const [selectedIconSeed, setSelectedIconSeed] = useState<string>(initialData?.icon || 'Thumbs01.svg');
+  const [username, setUsername] = useState('');
+  const [selectedIconSeed, setSelectedIconSeed] = useState<string>('Thumbs01.svg');
 
   const handleSave = () => {
     if (username.trim()) {
@@ -34,16 +30,8 @@ export const ProfileDialog = ({
     setSelectedIconSeed(seed);
   };
 
-  if (children) {
-    return (
-      <Dialog onClose={onClose} onSizeChange={onSizeChange}>
-        {children}
-      </Dialog>
-    );
-  }
-
   return (
-    <Dialog onClose={onClose} onSizeChange={onSizeChange}>
+    <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal>
       <div className="flex items-start justify-between">
         <div className="dialog-title">
           <p>Be</p>

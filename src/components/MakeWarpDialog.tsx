@@ -240,15 +240,9 @@ export const MakeWarpDialog = ({
             <Trash2 size={16} strokeWidth={2.25} />
           </IconButton>
         )}
-        {initialData ? (
-          <IconButton variant="outline" onClick={() => console.log('Share clicked')}>
-            <Share size={16} strokeWidth={2.25} />
-          </IconButton>
-        ) : (
-          <IconButton variant="outline" onClick={onClose}>
+        <IconButton variant="outline" onClick={onClose}>
             <X size={16} strokeWidth={2.25} />
-          </IconButton>
-        )}
+        </IconButton>
         <IconButton variant="default" onClick={handlePost}>
           <Check size={16} strokeWidth={2.25} />
         </IconButton>

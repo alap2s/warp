@@ -1,90 +1,119 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import dynamic from 'next/dynamic';
 import WelcomeDialog from '@/components/WelcomeDialog';
-import { signInAnonymously } from '@/lib/auth';
-import { createUserProfile } from '@/lib/user';
 import ProfileDialog from '@/components/ProfileDialog';
+import { useSearchParams } from 'next/navigation';
 import { GridStateProvider, useGridState } from '@/context/GridStateContext';
 import { useWarps } from '@/lib/hooks/useWarps';
+import { createUserProfile } from '@/lib/user';
+import { signInAnonymously } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
-const InteractiveGrid = dynamic(() => import('@/components/InteractiveGrid'), {
+const GridCanvas = dynamic(() => import('@/components/InteractiveGrid'), {
   ssr: false,
+  loading: () => <div className="w-screen h-screen bg-black" />,
 });
 
-const OnboardingManager = () => {
-  const { user, profile, loading, refreshProfile } = useAuth();
-  const { setDialogSize, setProfileDialogSize } = useGridState();
-  const [welcomeDismissed, setWelcomeDismissed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('welcomeShown') === 'true';
-    }
-    return false;
-  });
+const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
+  const { setDialogSize } = useGridState();
+  const { user, loading, refreshProfile } = useAuth();
+  const [step, setStep] = useState<'welcome' | 'profile' | 'done'>('welcome');
 
-  const handleSignIn = async () => {
-    await signInAnonymously();
-  };
-
-  const handleWelcomeNext = () => {
-    sessionStorage.setItem('welcomeShown', 'true');
-    setWelcomeDismissed(true);
-    if (!user) {
-      handleSignIn();
-    }
-  };
-
-  const handleProfileCreate = async (data: { username: string; icon: string }) => {
+  useEffect(() => {
+    const signIn = async () => {
+      if (!auth.currentUser) {
+        await signInAnonymously(auth);
+      }
+    };
+    signIn();
+  }, []);
+  
+  const handleNext = () => setStep('profile');
+  
+  const handleProfileSave = async (data: { username: string, icon: string }) => {
     if (user) {
       await createUserProfile(user.uid, data);
       await refreshProfile();
+      onComplete();
+      setStep('done');
+      setDialogSize(null);
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      setDialogSize(null);
-    }
-    if (profile) {
-      setProfileDialogSize(null);
-    }
-  }, [user, profile, setDialogSize, setProfileDialogSize]);
+  if (loading || step === 'done') return null;
 
-
-  if (loading) {
+  if (step === 'welcome') {
     return (
-      <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-        <div>Loading...</div>
-      </div>
+      <WelcomeDialog
+        onNext={handleNext}
+        onClose={() => {}}
+        onSizeChange={setDialogSize}
+      />
     );
   }
 
-  if (!welcomeDismissed) {
-    return <WelcomeDialog onNext={handleWelcomeNext} onClose={() => {}} onSizeChange={setDialogSize} />;
-  }
-
-  if (!user) {
-    return <WelcomeDialog onNext={handleWelcomeNext} onClose={() => {}} onSizeChange={setDialogSize} />;
-  }
-
-  if (!profile) {
-    return <ProfileDialog initialData={null} onSave={handleProfileCreate} onClose={() => {}} onSizeChange={setProfileDialogSize} />;
+  if (step === 'profile' && user) {
+    return (
+      <ProfileDialog
+        onSave={handleProfileSave}
+        onClose={() => setStep('welcome')}
+        onSizeChange={setDialogSize}
+      />
+    );
   }
 
   return null;
 };
 
-const Home = () => {
-  const { warps, loading, saving, refreshWarps, createWarp, updateWarp, deleteWarp } = useWarps();
+const AppContent = () => {
+  const { profile, loading } = useAuth();
+  const searchParams = useSearchParams();
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+
+  useEffect(() => {
+    if (!loading && profile && onboardingComplete) {
+      const redirectTo = searchParams.get('redirectTo');
+      if (redirectTo) {
+        setRedirecting(true);
+        window.location.href = redirectTo;
+      }
+    }
+  }, [loading, profile, onboardingComplete, searchParams]);
+
+  if (loading || redirecting) {
+    return <div className="w-screen h-screen bg-black" />;
+  }
 
   return (
-    <GridStateProvider warps={warps} createWarp={createWarp} updateWarp={updateWarp} deleteWarp={deleteWarp} isSaving={saving}>
-      <InteractiveGrid />
-      <OnboardingManager />
+    <>
+      <GridCanvas />
+      {!profile && <OnboardingFlow onComplete={() => setOnboardingComplete(true)} />}
+    </>
+  );
+}
+
+const HomeApp = () => {
+  const { warps, loading, saving, createWarp, updateWarp, deleteWarp } = useWarps();
+  return (
+    <GridStateProvider
+      warps={warps}
+      createWarp={createWarp}
+      updateWarp={updateWarp}
+      deleteWarp={deleteWarp}
+      isSaving={saving}
+    >
+      <Suspense fallback={<div className="w-screen h-screen bg-black" />}>
+        <AppContent />
+      </Suspense>
     </GridStateProvider>
-  )
+  );
 };
 
-export default Home;
+
+export default function Home() {
+  return <HomeApp />;
+}

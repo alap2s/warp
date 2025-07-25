@@ -47,7 +47,7 @@ HTMLCanvasElement.prototype.getContext = () => {
     rect: jest.fn(),
     clip: jest.fn(),
   };
-};
+}; 
 
 jest.mock('@/context/AuthContext', () => ({
   useAuth: () => ({

@@ -13,6 +13,7 @@ import { Plus } from 'lucide-react';
 import OpenWarpDialog from './OpenWarpDialog';
 import LoadingDialog from './ui/LoadingDialog';
 import { deleteUserAccount, updateUserProfile } from '@/lib/user';
+import { useWarps } from '@/lib/hooks/useWarps';
 
 const CreateWarpTile = ({ onClick }: { onClick: () => void }) => {
   const tileRef = React.useRef<HTMLDivElement>(null);
@@ -71,6 +72,7 @@ const GridUIManager = () => {
     meDialogSize,
     isLoading,
     warps,
+    refreshWarps,
   } = useGridState();
   const [isUpdatingAvatar, setUpdatingAvatar] = React.useState(false);
   const [isSegmentedControlVisible, setSegmentedControlVisible] = React.useState(false);
@@ -129,6 +131,24 @@ const GridUIManager = () => {
     setWarpPositions(newPositions);
   }, [warps, user, screenSize]);
 
+  React.useEffect(() => {
+    if (activeWarp) {
+      const updatedWarp = warps.find(warp => warp.id === activeWarp.id);
+      if (updatedWarp) {
+        setActiveWarp(updatedWarp);
+      }
+    }
+  }, [warps, activeWarp, setActiveWarp]);
+
+  React.useEffect(() => {
+    if (activeWarp) {
+      const updatedWarp = warps.find(warp => warp.id === activeWarp.id);
+      if (updatedWarp) {
+        setActiveWarp(updatedWarp);
+      }
+    }
+  }, [warps, activeWarp, setActiveWarp]);
+
 
   const isAnyDialogOpen = isMakeWarpDialogOpen || !profile || isOpenWarpDialogOpen || isUpdatingAvatar;
 
@@ -140,6 +160,13 @@ const GridUIManager = () => {
     setUpdatingAvatar(false);
     setUpdateAvatarDialogSize(null);
     setMeDialogSize({ width: 300, height: 557 });
+  };
+
+  const handleUpdateProfile = async (data: { notificationsEnabled: boolean }) => {
+    if (user) {
+      await updateUserProfile(user.uid, data);
+      await refreshProfile();
+    }
   };
 
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -180,6 +207,7 @@ const GridUIManager = () => {
             warp={activeWarp}
             onClose={closeWarpDialog}
             onSizeChange={setDialogSize}
+            onEdit={() => startEditWarp(activeWarp)}
           />
         )}
       </AnimatePresence>
@@ -203,7 +231,10 @@ const GridUIManager = () => {
             key={myWarp.id}
             warp={{ ...myWarp, icon: getIcon(myWarp.icon) }}
             username={profile?.username || ''}
-            onClick={() => startEditWarp(myWarp)}
+            onClick={() => {
+              setActiveWarp(myWarp);
+              openWarpDialog();
+            }}
             onSizeChange={setCenterTileSize}
           />
         ) : (
@@ -246,6 +277,7 @@ const GridUIManager = () => {
                 setUpdatingAvatar(true);
               }}
               onDeleteAccount={() => setMeDialogSize(null)}
+              onUpdateProfile={handleUpdateProfile}
             />
           )}
         </AnimatePresence>

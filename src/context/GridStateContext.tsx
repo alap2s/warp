@@ -14,7 +14,6 @@ interface GridStateContextType {
   isSaving: boolean;
   isLoading: boolean;
   dialogSize: DialogSize;
-  profileDialogSize: DialogSize;
   meDialogSize: DialogSize;
   updateAvatarDialogSize: DialogSize;
   centerTileSize: DialogSize;
@@ -29,7 +28,6 @@ interface GridStateContextType {
   deleteWarp: () => void;
   setActiveWarp: (warp: Warp | null) => void;
   setDialogSize: (size: DialogSize) => void;
-  setProfileDialogSize: (size: DialogSize) => void;
   setMeDialogSize: (size: DialogSize) => void;
   setUpdateAvatarDialogSize: (size: DialogSize) => void;
   setCenterTileSize: (size: DialogSize) => void;
@@ -66,7 +64,6 @@ export const GridStateProvider = ({
   const [warpToEdit, setWarpToEdit] = useState<Warp | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [dialogSize, setDialogSize] = useState<DialogSize>(null);
-  const [profileDialogSize, setProfileDialogSize] = useState<DialogSize>(null);
   const [meDialogSize, setMeDialogSize] = useState<DialogSize>(null);
   const [updateAvatarDialogSize, setUpdateAvatarDialogSize] = useState<DialogSize>(null);
   const [centerTileSize, setCenterTileSize] = useState<DialogSize>(null);
@@ -78,6 +75,9 @@ export const GridStateProvider = ({
 
   const closeMakeWarpDialog = () => {
     setMakeWarpDialogOpen(false);
+    if (warpToEdit) {
+      setActiveWarp(warpToEdit);
+    }
     setWarpToEdit(null);
     setDialogSize(null);
   };
@@ -131,7 +131,6 @@ export const GridStateProvider = ({
     isSaving,
     isLoading,
     dialogSize,
-    profileDialogSize,
     meDialogSize,
     updateAvatarDialogSize,
     centerTileSize,
@@ -146,7 +145,6 @@ export const GridStateProvider = ({
     deleteWarp: deleteWarpAndCloseDialog,
     setActiveWarp,
     setDialogSize,
-    setProfileDialogSize,
     setMeDialogSize,
     setUpdateAvatarDialogSize,
     setCenterTileSize,

@@ -4,13 +4,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode, useCa
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { getUserProfile } from '@/lib/user';
-
-interface UserProfile {
-  username: string;
-  icon: string;
-  uid: string;
-  photoURL?: string;
-}
+import { UserProfile } from '@/lib/types';
 
 interface AuthContextType {
   user: User | null;

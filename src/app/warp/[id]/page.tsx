@@ -1,38 +1,64 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import GridCanvas from '@/components/InteractiveGrid';
+import { useGridState, GridStateProvider } from '@/context/GridStateContext';
 import { getWarp } from '@/lib/warp';
-import WarpTile from '@/components/WarpTile';
-import { getIcon } from '@/components/MakeWarpDialog';
+import { getUsersByIds } from '@/lib/user';
+import { Warp } from '@/lib/types';
+import { useAuth } from '@/context/AuthContext';
+import { useWarps } from '@/lib/hooks/useWarps';
 
-const WarpPage = ({ params }: { params: { id: string } }) => {
-  const [warp, setWarp] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+const WarpLoader = () => {
+  const { id } = useParams<{ id: string }>();
+  const { setActiveWarp, openWarpDialog } = useGridState();
+  const { user, loading: authLoading } = useAuth();
+  const [warpLoaded, setWarpLoaded] = useState(false);
 
   useEffect(() => {
-    const fetchWarp = async () => {
-      const warpData = await getWarp(params.id);
-      setWarp(warpData);
-      setLoading(false);
+    if (authLoading || warpLoaded) return;
+
+    const fetchAndSetWarp = async () => {
+      const warpData = await getWarp(id);
+      if (warpData) {
+        // We need to fetch the owner's profile to display it correctly
+        const users = await getUsersByIds([warpData.ownerId]);
+        const warpWithUser = { ...warpData, user: users[warpData.ownerId] };
+        
+        setActiveWarp(warpWithUser as Warp);
+        openWarpDialog();
+        setWarpLoaded(true);
+      }
     };
-    fetchWarp();
-  }, [params.id]);
+    fetchAndSetWarp();
+  }, [id, setActiveWarp, openWarpDialog, user, authLoading, warpLoaded]);
 
-  if (loading) {
-    return <div>Loading warp...</div>;
-  }
+  return null;
+};
 
-  if (!warp) {
-    return <div>Warp not found</div>;
-  }
-
-  const IconComponent = getIcon(warp.what);
+const SharedWarpApp = () => {
+  const { warps, loading, saving, createWarp, updateWarp, deleteWarp } = useWarps();
 
   return (
-    <div className="relative w-screen h-screen flex items-center justify-center">
-      <WarpTile warp={{...warp, icon: IconComponent}} username={''} onRemove={() => {}} />
-    </div>
+    <GridStateProvider
+      warps={warps}
+      createWarp={createWarp}
+      updateWarp={updateWarp}
+      deleteWarp={deleteWarp}
+      isSaving={saving}
+    >
+      <GridCanvas />
+      <WarpLoader />
+    </GridStateProvider>
+  );
+}
+
+
+const SharedWarpPage = () => {
+  return (
+    <SharedWarpApp />
   );
 };
 
-export default WarpPage; 
+export default SharedWarpPage; 

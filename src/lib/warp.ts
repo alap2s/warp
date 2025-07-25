@@ -1,21 +1,7 @@
-import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, arrayUnion, arrayRemove, Timestamp, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
-
-export interface UserProfile {
-  username: string;
-  avatar: string;
-}
-
-export interface Warp {
-  id: string;
-  what: string;
-  when: Timestamp;
-  where: string;
-  icon: string;
-  ownerId: string;
-  participants: string[];
-  user?: UserProfile;
-}
+import { UserProfile, Warp } from "./types";
+import { getUserProfile, getUsersByIds } from './user';
 
 export const createWarp = async (data: { what: string; when: Date; where: string; icon: string; ownerId: string }) => {
   try {
@@ -32,16 +18,54 @@ export const createWarp = async (data: { what: string; when: Date; where: string
   }
 };
 
-export const getWarps = async () => {
+export const createNotification = async (
+  userId: string,
+  type: 'warp_join',
+  warpId: string,
+  actorId: string
+) => {
   try {
-    const warpsCol = collection(db, "warps");
-    const warpsSnapshot = await getDocs(warpsCol);
-    const warpsList = warpsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    return warpsList;
+    const userProfile = (await getUserProfile(userId)) as UserProfile | null;
+    if (userProfile?.notificationsEnabled) {
+      await addDoc(collection(db, 'notifications'), {
+        userId,
+        type,
+        warpId,
+        actorId,
+        read: false,
+        createdAt: serverTimestamp(),
+      });
+    }
   } catch (error) {
-    console.error("Error getting warps:", error);
-    throw new Error('Failed to get warps. Please try again.');
+    console.error('Error creating notification:', error);
   }
+};
+
+export const markNotificationsAsRead = async (userId: string) => {
+  try {
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', userId),
+      where('read', '==', false)
+    );
+    const querySnapshot = await getDocs(q);
+    const batch = [];
+    querySnapshot.forEach((doc) => {
+      batch.push(updateDoc(doc.ref, { read: true }));
+    });
+    await Promise.all(batch);
+  } catch (error) {
+    console.error('Error marking notifications as read:', error);
+  }
+};
+
+
+export const getWarps = (onUpdate: (warps: Warp[]) => void) => {
+    const warpsCol = collection(db, "warps");
+  return onSnapshot(warpsCol, (snapshot) => {
+    const warpsList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Warp[];
+    onUpdate(warpsList);
+  });
 };
 
 export const getWarpsByOwner = async (ownerId: string) => {

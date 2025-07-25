@@ -9,6 +9,7 @@ import Image from 'next/image';
 import NotificationToggle from './ui/NotificationToggle';
 import DialogHeader from './ui/DialogHeader';
 import { deleteUserAccount } from '@/lib/user';
+import { UserProfile } from '@/lib/types';
 
 const MeDialog = ({
   userProfile,
@@ -16,32 +17,26 @@ const MeDialog = ({
   onSizeChange,
   onUpdateAvatar,
   onDeleteAccount,
+  onUpdateProfile,
 }: {
-  userProfile: { username: string; icon: string };
+  userProfile: UserProfile;
   onClose: () => void;
   onSizeChange?: (size: { width: number; height: number }) => void;
   onUpdateAvatar: () => void;
   onDeleteAccount: () => void;
+  onUpdateProfile: (data: { notificationsEnabled: boolean }) => void;
 }) => {
-  const [notifications, setNotifications] = React.useState(true);
-  const dialogRef = React.useRef<HTMLDivElement>(null);
+  const [notifications, setNotifications] = React.useState(userProfile.notificationsEnabled ?? true);
 
   const handleDelete = async () => {
     await deleteUserAccount();
     onDeleteAccount();
   };
 
-  React.useEffect(() => {
-    if (dialogRef.current) {
-      // This effect is needed to ensure the dialog is closed when the component unmounts
-      // or when the dialog is re-rendered with a different onClose prop.
-      // The original Dialog component handles its own closing, but this ensures
-      // the dialog state is reset if onClose changes.
-      // This is a common pattern when using Dialog with a custom onClose prop.
-      // However, the original Dialog component's onClose prop is sufficient.
-      // This effect is kept as a fallback or for future Dialog updates.
-    }
-  }, [onClose]);
+  const handleNotificationChange = (value: boolean) => {
+    setNotifications(value);
+    onUpdateProfile({ notificationsEnabled: value });
+  };
 
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={true}>
@@ -67,7 +62,7 @@ const MeDialog = ({
             )}
             <p className="text-white/80 font-medium">Notifications</p>
           </div>
-          <NotificationToggle value={notifications} onChange={setNotifications} />
+          <NotificationToggle value={notifications} onChange={handleNotificationChange} />
         </div>
         <hr className="border-white/20" />
         <div>
