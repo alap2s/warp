@@ -234,6 +234,7 @@ const GridUIManager = () => {
             onClick={() => handleWarpClick(activeWarp)}
             isNew={notifications.some(n => n.warpId === activeWarp.id && n.type === 'new_warp')}
             joinerCount={notifications.filter(n => n.warpId === activeWarp.id && n.type === 'warp_join').length}
+            participantCount={activeWarp.participants.length}
           />
         )}
       </AnimatePresence>
@@ -249,6 +250,7 @@ const GridUIManager = () => {
             onSizeChange={setCenterTileSize}
             isNew={notifications.some(n => n.warpId === myWarp.id && n.type === 'new_warp')}
             joinerCount={notifications.filter(n => n.warpId === myWarp.id && n.type === 'warp_join').length}
+            participantCount={myWarp.participants.length}
           />
         ) : (
           profile && <CreateWarpTile onClick={openMakeWarpDialog} />
@@ -274,6 +276,7 @@ const GridUIManager = () => {
             }}
             isNew={notifications.some(n => n.warpId === warp.id && n.type === 'new_warp')}
             joinerCount={notifications.filter(n => n.warpId === warp.id && n.type === 'warp_join').length}
+            participantCount={warp.participants.length}
           />
         );
       })}

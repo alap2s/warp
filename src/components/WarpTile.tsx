@@ -13,6 +13,7 @@ interface WarpTileProps {
   onSizeChange?: (size: { width: number; height: number } | null) => void;
   isNew?: boolean;
   joinerCount?: number;
+  participantCount?: number;
 }
 
 const WarpTile = ({ 
@@ -23,6 +24,7 @@ const WarpTile = ({
   onSizeChange,
   isNew,
   joinerCount,
+  participantCount,
 }: WarpTileProps) => {
   const { what, when, icon: Icon } = warp;
   const tileRef = React.useRef<HTMLDivElement>(null);
@@ -50,12 +52,16 @@ const WarpTile = ({
     >
       <div className="absolute -top-2 -right-2">
         {joinerCount && joinerCount > 0 ? (
-          <div className="w-6 h-6 bg-black border-2 border-white/40 rounded-full flex items-center justify-center">
-            <p className="text-white text-[10px] font-bold">{joinerCount}</p>
+          <div className="bg-white rounded-full px-2 py-1">
+            <p className="text-black text-xs font-bold">+{joinerCount}</p>
           </div>
         ) : isNew ? (
           <div className="bg-white rounded-full px-2 py-1">
             <p className="text-black text-[10px] font-bold">New</p>
+          </div>
+        ) : participantCount && participantCount > 0 ? (
+          <div className="w-6 h-6 bg-black border-2 border-white/40 rounded-full flex items-center justify-center">
+            <p className="text-white text-[10px] font-bold">{participantCount}</p>
           </div>
         ) : null}
       </div>
