@@ -166,6 +166,7 @@ export const MakeWarpDialog = ({
   const [whenValue, setWhenValue] = useState<Date>(initialData?.when ? new Date(initialData.when) : getInitialWhenDate());
   const [whereValue, setWhereValue] = useState<string>(initialData?.where || '');
   const [currentIconName, setCurrentIconName] = useState<string>(initialData?.icon || 'LineSquiggle');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!initialData) {
@@ -224,6 +225,19 @@ export const MakeWarpDialog = ({
     }
   };
 
+  const handleDelete = async () => {
+    if (onDelete) {
+      setIsDeleting(true);
+      try {
+        await onDelete();
+        // The dialog will be closed by the parent component unmounting this one
+      } catch (error) {
+        console.error("Failed to delete warp:", error);
+        setIsDeleting(false); // Re-enable button on error
+      }
+    }
+  };
+
   const dayOptions = Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() + i);
@@ -236,8 +250,12 @@ export const MakeWarpDialog = ({
     <Dialog onClose={onClose} onSizeChange={onSizeChange}>
       <DialogHeader title={initialData ? ['Edit'] : ['Make', 'Warp']}>
         {onDelete && (
-          <IconButton variant="outline" onClick={onDelete}>
-            <Trash2 size={16} strokeWidth={2.25} />
+          <IconButton variant="outline" onClick={handleDelete} disabled={isDeleting}>
+            {isDeleting ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+            ) : (
+              <Trash2 size={16} strokeWidth={2.25} />
+            )}
           </IconButton>
         )}
         <IconButton variant="outline" onClick={onClose}>

@@ -12,7 +12,7 @@ import SegmentedControl from './ui/SegmentedControl';
 import { Plus } from 'lucide-react';
 import OpenWarpDialog from './OpenWarpDialog';
 import LoadingDialog from './ui/LoadingDialog';
-import { deleteUserAccount, updateUserProfile } from '@/lib/user';
+import { deleteUserAccount, updateUserProfile, getUsersByIds } from '@/lib/user';
 import { useWarps } from '@/lib/hooks/useWarps';
 import { useNotifications } from '@/lib/hooks/useNotifications';
 import { markNotificationsAsRead } from '@/lib/warp';
@@ -77,6 +77,8 @@ const GridUIManager = () => {
     warps,
     refreshWarps,
   } = useGridState();
+  const [isPreparingWarp, setIsPreparingWarp] = React.useState(false);
+  const [participantProfiles, setParticipantProfiles] = React.useState<UserProfile[]>([]);
   const [isUpdatingAvatar, setUpdatingAvatar] = React.useState(false);
   const [isSegmentedControlVisible, setSegmentedControlVisible] = React.useState(false);
   const [segmentedControlSelection, setSegmentedControlSelection] = React.useState('Everyone');
@@ -135,6 +137,25 @@ const GridUIManager = () => {
   }, [warps, user, screenSize]);
 
   React.useEffect(() => {
+    const prepareWarp = async () => {
+      if (isOpenWarpDialogOpen && activeWarp) {
+        setIsPreparingWarp(true);
+        const profiles = activeWarp.participants?.length > 0 ? await getUsersByIds(activeWarp.participants) : {};
+        setParticipantProfiles(Object.values(profiles) as UserProfile[]);
+        
+        const relevantNotifications = notifications.filter(n => n.warpId === activeWarp.id);
+        if (relevantNotifications.length > 0 && user) {
+          markNotificationsAsRead(user!.uid, relevantNotifications.map(n => n.id));
+        }
+        
+        setIsPreparingWarp(false);
+      }
+    };
+    prepareWarp();
+  }, [isOpenWarpDialogOpen, activeWarp, user, notifications]);
+
+
+  React.useEffect(() => {
     if (activeWarp) {
       const updatedWarp = warps.find(warp => warp.id === activeWarp.id);
       if (updatedWarp) {
@@ -183,10 +204,6 @@ const GridUIManager = () => {
   const handleWarpClick = (warp: any) => {
     setActiveWarp(warp);
     openWarpDialog();
-    const relevantNotifications = notifications.filter(n => n.warpId === warp.id);
-    if (relevantNotifications.length > 0) {
-      markNotificationsAsRead(user!.uid, relevantNotifications.map(n => n.id));
-    }
   };
 
   // Convert Firestore Timestamp to Date for MakeWarpDialog
@@ -215,12 +232,20 @@ const GridUIManager = () => {
           />
         )}
         {isOpenWarpDialogOpen && activeWarp && (
-          <OpenWarpDialog
-            warp={activeWarp}
-            onClose={closeWarpDialog}
-            onSizeChange={setDialogSize}
-            onEdit={() => startEditWarp(activeWarp)}
-          />
+          isPreparingWarp ? (
+            <LoadingDialog />
+          ) : (
+            <OpenWarpDialog
+              warp={activeWarp}
+              participantProfiles={participantProfiles}
+              onClose={() => {
+                closeWarpDialog();
+                setParticipantProfiles([]);
+              }}
+              onSizeChange={setDialogSize}
+              onEdit={() => startEditWarp(activeWarp)}
+            />
+          )
         )}
       </AnimatePresence>
       

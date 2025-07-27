@@ -110,17 +110,18 @@ export const GridStateProvider = ({
   const startEditWarp = (warp: Warp) => {
     setWarpToEdit(warp);
     setActiveWarp(null);
+    closeWarpDialog();
     setMakeWarpDialogOpen(true);
   };
 
-  const deleteWarpAndCloseDialog = () => {
+  const deleteWarp = async () => {
     if (warpToEdit) {
-      removeWarp(warpToEdit.id);
+      await removeWarp(warpToEdit.id);
+      setActiveWarp(null);
+      setMakeWarpDialogOpen(false);
+      setWarpToEdit(null);
+      setDialogSize(null);
     }
-    setActiveWarp(null);
-    setMakeWarpDialogOpen(false);
-    setWarpToEdit(null);
-    setDialogSize(null);
   };
 
   const value = {
@@ -142,7 +143,7 @@ export const GridStateProvider = ({
     postWarp,
     updateWarp,
     startEditWarp,
-    deleteWarp: deleteWarpAndCloseDialog,
+    deleteWarp,
     setActiveWarp,
     setDialogSize,
     setMeDialogSize,
