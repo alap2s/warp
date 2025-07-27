@@ -53,11 +53,11 @@ const WarpTile = ({
       <div className="absolute -top-2 -right-2">
         {joinerCount && joinerCount > 0 ? (
           <div className="bg-white rounded-full px-2 py-1">
-            <p className="text-black text-xs font-bold">+{joinerCount}</p>
+            <p className="text-black text-xs font-bold">+1</p>
           </div>
         ) : isNew ? (
           <div className="bg-white rounded-full px-2 py-1">
-            <p className="text-black text-[10px] font-bold">New</p>
+            <p className="text-black text-xs font-bold">New</p>
           </div>
         ) : participantCount && participantCount > 0 ? (
           <div className="w-6 h-6 bg-black border-2 border-white/40 rounded-full flex items-center justify-center">
