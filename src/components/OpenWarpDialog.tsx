@@ -7,7 +7,7 @@ import DialogHeader from './ui/DialogHeader';
 import { formatEuropeanDate, formatTime } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from './ui/Button';
-import { Merge, Edit, Share2 } from 'lucide-react';
+import { Merge, Edit, Share } from 'lucide-react';
 import { joinWarp, leaveWarp } from '@/lib/warp';
 import { getUsersByIds } from '@/lib/user';
 import { usePrevious } from '@/lib/utils';
@@ -110,7 +110,7 @@ const OpenWarpDialog = ({ warp, onClose, onSizeChange, onEdit }: OpenWarpDialogP
           {currentUser?.uid === warp.ownerId ? (
             <div className="flex gap-2">
               <IconButton variant="outline" onClick={onEdit}><Edit size={16} /></IconButton>
-              <IconButton variant="outline" onClick={handleShare}><Share2 size={16} /></IconButton>
+              <IconButton variant="outline" onClick={handleShare}><Share size={16} /></IconButton>
             </div>
           ) : (
             currentUser && (
