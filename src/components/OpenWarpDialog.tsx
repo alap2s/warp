@@ -7,7 +7,7 @@ import DialogHeader from './ui/DialogHeader';
 import { formatEuropeanDate, formatTime } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from './ui/Button';
-import { Merge, Edit, Share2 } from 'lucide-react';
+import { Merge, Edit, Share } from 'lucide-react';
 import { joinWarp, leaveWarp } from '@/lib/warp';
 import { usePrevious } from '@/lib/utils';
 import { IconButton } from './ui/IconButton';
@@ -24,8 +24,8 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
   const { user: currentUser } = useAuth();
   const [isJoined, setIsJoined] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-
-  const participants = warp.participants || [];
+  //const participants = warp.participants || [];
+  const participants = React.useMemo(() => warp.participants || [], [warp.participants]);
   const prevParticipants = usePrevious(participants);
 
   useEffect(() => {
@@ -92,15 +92,16 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
 
   const { what, when, where } = warp;
   const date = when.toDate();
-
+  
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={true}>
       <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
+      
         <DialogHeader title={warp.user?.username || '...'}>
           {currentUser?.uid === warp.ownerId ? (
             <div className="flex gap-2">
               <IconButton variant="outline" onClick={onEdit}><Edit size={16} /></IconButton>
-              <IconButton variant="outline" onClick={handleShare}><Share2 size={16} /></IconButton>
+              <IconButton variant="outline" onClick={handleShare}><Share size={16} /></IconButton>
             </div>
           ) : (
             currentUser && (

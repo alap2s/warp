@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { FormData } from '@/components/MakeWarpDialog';
 
-type Warp = any; // A more specific type will be better
+import { Warp } from '@/lib/types';
 type DialogSize = { width: number, height: number } | null;
 
 interface GridStateContextType {
@@ -53,8 +53,8 @@ export const GridStateProvider = ({
 }: { 
   children: ReactNode,
   warps: Warp[],
-  createWarp: (data: any) => Promise<void>,
-  updateWarp: (id: string, data: any) => Promise<void>,
+  createWarp: (data: FormData) => Promise<void>,
+  updateWarp: (id: string, data: Partial<FormData>) => Promise<void>,
   deleteWarp: (id: string) => Promise<void>,
   isSaving: boolean,
 }) => {
