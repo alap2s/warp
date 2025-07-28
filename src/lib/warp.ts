@@ -1,7 +1,7 @@
-import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, arrayUnion, arrayRemove, Timestamp, onSnapshot } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, arrayUnion, arrayRemove, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { UserProfile, Warp } from "./types";
-import { getUserProfile, getUsersByIds } from './user';
+import { getUserProfile } from './user';
 
 export const createWarp = async (data: { what: string; when: Date; where: string; icon: string; ownerId: string }) => {
   try {

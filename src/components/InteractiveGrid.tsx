@@ -6,7 +6,7 @@ import { useSpring, SpringValue } from '@react-spring/three';
 import * as THREE from 'three';
 import { useAuth } from '@/context/AuthContext';
 import { useGridState } from '@/context/GridStateContext';
-import { useWarps } from '@/lib/hooks/useWarps';
+
 import GridUIManager from './GridUIManager';
 
 const smoothstep = (min: number, max: number, value: number) => {
@@ -74,9 +74,10 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
     meDialogBumpStrength.start(meDialogRect ? dialogBumpConfig.dialogBumpStrength : 0);
   }, [meDialogRect, meDialogBumpStrength, dialogBumpConfig.dialogBumpStrength]);
 
+
   useEffect(() => {
     updateAvatarDialogBumpStrength.start(null ? dialogBumpConfig.dialogBumpStrength : 0); // This was removed from props, so it's always 0
-  }, [null, updateAvatarDialogBumpStrength, dialogBumpConfig.dialogBumpStrength]);
+  }, [updateAvatarDialogBumpStrength, dialogBumpConfig.dialogBumpStrength]);
 
   const texture = useMemo(() => {
     const size = 256;
@@ -448,7 +449,7 @@ const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect, profileDialogR
         profileDialogRect={profileDialogRect}
         segmentedControlRect={segmentedControlRect}
         meDialogRect={meDialogRect}
-        updateAvatarDialogRect={null} // Removed updateAvatarDialogRect prop
+        //updateAvatarDialogRect={null} // Removed updateAvatarDialogRect prop
         centerTileRect={centerTileRect}
         dialogBumpConfig={dialogBumpConfig}
       />
@@ -486,11 +487,11 @@ const SETTING_A: DialogBumpConfig = {
   dialogBumpScale: 1.0,
 };
 
-const SETTING_B: DialogBumpConfig = {
-  dialogBumpStrength: -0.5,
-  dialogEdgeSoftness: 0.1,
-  dialogBumpScale: 1.3,
-};
+// const SETTING_B: DialogBumpConfig = {
+//   dialogBumpStrength: -0.5,
+//   dialogEdgeSoftness: 0.1,
+//   dialogBumpScale: 1.3,
+// };
 
 const GridCanvas = () => {
   const { profile } = useAuth();
@@ -501,19 +502,22 @@ const GridCanvas = () => {
     dialogSize,
     profileDialogSize,
     meDialogSize,
-    updateAvatarDialogSize,
+    //updateAvatarDialogSize,
     centerTileSize,
   } = useGridState();
   const [viewportInfo, setViewportInfo] = useState<ViewportInfo | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [segmentedControlSize, setSegmentedControlSize] = useState<{ width: number, height: number, top: number, left: number } | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isSegmentedControlVisible, setSegmentedControlVisible] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [dialogBumpConfig, setDialogBumpConfig] = useState<DialogBumpConfig>(SETTING_A);
 
   const isAnyDialogOpen = isMakeWarpDialogOpen || !profile;
 
-  const handleSettingSelect = (setting: 'A' | 'B') => {
-    setDialogBumpConfig(setting === 'A' ? SETTING_A : SETTING_B);
-  };
+  // const handleSettingSelect = (setting: 'A' | 'B') => {
+  //   setDialogBumpConfig(setting === 'A' ? SETTING_A : SETTING_B);
+  // };
 
   const handleGridClick = () => {
     if(isAnyDialogOpen) return;
@@ -565,20 +569,20 @@ const GridCanvas = () => {
     return { width: dialogWorldWidth, height: dialogWorldHeight, cornerRadius };
   }, [meDialogSize, viewportInfo]);
 
-  const updateAvatarDialogRect = useMemo(() => {
-    if (!updateAvatarDialogSize || !viewportInfo) return null;
+  // const updateAvatarDialogRect = useMemo(() => {
+  //   if (!updateAvatarDialogSize || !viewportInfo) return null;
 
-    const { viewport, size } = viewportInfo;
-    const dialogWidthPx = updateAvatarDialogSize.width;
-    const dialogHeightPx = updateAvatarDialogSize.height;
-    const dialogCornerRadiusPx = 48;
+  //   const { viewport, size } = viewportInfo;
+  //   const dialogWidthPx = updateAvatarDialogSize.width;
+  //   const dialogHeightPx = updateAvatarDialogSize.height;
+  //   const dialogCornerRadiusPx = 48;
 
-    const dialogWorldWidth = (dialogWidthPx / size.width) * viewport.width;
-    const dialogWorldHeight = (dialogHeightPx / size.height) * viewport.height;
-    const cornerRadius = (dialogCornerRadiusPx / size.width) * viewport.width;
+  //   const dialogWorldWidth = (dialogWidthPx / size.width) * viewport.width;
+  //   const dialogWorldHeight = (dialogHeightPx / size.height) * viewport.height;
+  //   const cornerRadius = (dialogCornerRadiusPx / size.width) * viewport.width;
 
-    return { width: dialogWorldWidth, height: dialogWorldHeight, cornerRadius };
-  }, [updateAvatarDialogSize, viewportInfo]);
+  //   return { width: dialogWorldWidth, height: dialogWorldHeight, cornerRadius };
+  // }, [updateAvatarDialogSize, viewportInfo]);
 
   const centerTileRect = useMemo(() => {
     if (!centerTileSize || !viewportInfo) return null;

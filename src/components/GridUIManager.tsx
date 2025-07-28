@@ -4,7 +4,7 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useGridState } from '@/context/GridStateContext';
-import { MakeWarpDialog, getIcon } from './MakeWarpDialog';
+import { MakeWarpDialog,getIcon } from './MakeWarpDialog';
 import WarpTile from './WarpTile';
 import MeDialog from './MeDialog';
 import UpdateAvatarDialog from './UpdateAvatarDialog';
@@ -12,10 +12,10 @@ import SegmentedControl from './ui/SegmentedControl';
 import { Plus } from 'lucide-react';
 import OpenWarpDialog from './OpenWarpDialog';
 import LoadingDialog from './ui/LoadingDialog';
-import { deleteUserAccount, updateUserProfile } from '@/lib/user';
-import { useWarps } from '@/lib/hooks/useWarps';
+import { updateUserProfile } from '@/lib/user';
 import { useNotifications } from '@/lib/hooks/useNotifications';
 import { markNotificationsAsRead } from '@/lib/warp';
+import type { Warp, UserProfile } from '@/lib/types';
 
 const CreateWarpTile = ({ onClick }: { onClick: () => void }) => {
   const tileRef = React.useRef<HTMLDivElement>(null);
@@ -70,17 +70,13 @@ const GridUIManager = () => {
     closeWarpDialog,
     setDialogSize, 
     setMeDialogSize, 
-    setCenterTileSize,
     setUpdateAvatarDialogSize,
     meDialogSize,
     isLoading,
     warps,
-    refreshWarps,
   } = useGridState();
   const [isUpdatingAvatar, setUpdatingAvatar] = React.useState(false);
-  const [isSegmentedControlVisible, setSegmentedControlVisible] = React.useState(false);
   const [segmentedControlSelection, setSegmentedControlSelection] = React.useState('Everyone');
-  const segmentedControlRef = React.useRef<HTMLDivElement>(null);
   const [warpPositions, setWarpPositions] = React.useState<{ [key: string]: { x: number, y: number } }>({});
   const [screenSize, setScreenSize] = React.useState({ width: 0, height: 0 });
 
@@ -96,7 +92,7 @@ const GridUIManager = () => {
   }, []);
 
   React.useEffect(() => {
-    if (screenSize.width === 0 || screenSize.height === 0) return;
+    if (screenSize.width === 0 || screenSize.height === 0 || !warps) return;
 
     const TILE_WIDTH = 84;
     const TILE_HEIGHT = 84;
@@ -135,23 +131,13 @@ const GridUIManager = () => {
   }, [warps, user, screenSize]);
 
   React.useEffect(() => {
-    if (activeWarp) {
+    if (activeWarp && warps) {
       const updatedWarp = warps.find(warp => warp.id === activeWarp.id);
       if (updatedWarp) {
         setActiveWarp(updatedWarp);
       }
     }
   }, [warps, activeWarp, setActiveWarp]);
-
-  React.useEffect(() => {
-    if (activeWarp) {
-      const updatedWarp = warps.find(warp => warp.id === activeWarp.id);
-      if (updatedWarp) {
-        setActiveWarp(updatedWarp);
-      }
-    }
-  }, [warps, activeWarp, setActiveWarp]);
-
 
   const isAnyDialogOpen = isMakeWarpDialogOpen || !profile || isOpenWarpDialogOpen || isUpdatingAvatar;
 
@@ -165,7 +151,7 @@ const GridUIManager = () => {
     setMeDialogSize({ width: 300, height: 557 });
   };
 
-  const handleUpdateProfile = async (data: { notificationsEnabled: boolean }) => {
+  const handleUpdateProfile = async (data: Partial<UserProfile>) => {
     if (user) {
       await updateUserProfile(user.uid, data);
       await refreshProfile();
@@ -180,23 +166,25 @@ const GridUIManager = () => {
     }
   }
 
-  const handleWarpClick = (warp: any) => {
+  const handleWarpClick = (warp: Warp) => {
     setActiveWarp(warp);
     openWarpDialog();
-    const relevantNotifications = notifications.filter(n => n.warpId === warp.id);
-    if (relevantNotifications.length > 0) {
-      markNotificationsAsRead(user!.uid, relevantNotifications.map(n => n.id));
+    if(user) {
+      const relevantNotifications = notifications.filter(n => n.warpId === warp.id);
+      if (relevantNotifications.length > 0) {
+        markNotificationsAsRead(user.uid, relevantNotifications.map(n => n.id));
+      }
     }
   };
 
   // Convert Firestore Timestamp to Date for MakeWarpDialog
-  const warpToEditWithDate = warpToEdit ? {
+  const warpToEditWithDate = warpToEdit && warpToEdit.when ? {
     ...warpToEdit,
     when: warpToEdit.when.toDate ? warpToEdit.when.toDate() : new Date(warpToEdit.when),
   } : null;
   
-  const myWarp = user ? warps.find(warp => warp.ownerId === user.uid) : null;
-  const otherWarps = user && profile ? warps.filter(warp => warp.ownerId !== user.uid) : [];
+  const myWarp = user && warps ? warps.find(warp => warp.ownerId === user.uid) : null;
+  const otherWarps = user && profile && warps ? warps.filter(warp => warp.ownerId !== user.uid) : [];
   const showTiles = !isMakeWarpDialogOpen && !isOpenWarpDialogOpen && !meDialogSize && !isUpdatingAvatar;
 
   return (
@@ -216,7 +204,7 @@ const GridUIManager = () => {
         )}
         {isOpenWarpDialogOpen && activeWarp && (
           <OpenWarpDialog
-            warp={activeWarp}
+            warp={{...activeWarp, icon: getIcon(activeWarp.icon)}}
             onClose={closeWarpDialog}
             onSizeChange={setDialogSize}
             onEdit={() => startEditWarp(activeWarp)}
@@ -247,7 +235,6 @@ const GridUIManager = () => {
             warp={{ ...myWarp, icon: getIcon(myWarp.icon) }}
             username={profile?.username || ''}
             onClick={() => handleWarpClick(myWarp)}
-            onSizeChange={setCenterTileSize}
             isNew={notifications.some(n => n.warpId === myWarp.id && n.type === 'new_warp')}
             joinerCount={notifications.filter(n => n.warpId === myWarp.id && n.type === 'warp_join').length}
             participantCount={myWarp.participants.length}
@@ -261,23 +248,24 @@ const GridUIManager = () => {
       {showTiles && profile && otherWarps.map(warp => {
         // Hide the tile if it's the currently active one (since it's in the center)
         if (activeWarp && activeWarp.id === warp.id) return null;
-
         const IconComponent = getIcon(warp.icon);
         const position = warpPositions[warp.id];
         return (
-          <WarpTile
-            key={warp.id}
-            warp={{ ...warp, icon: IconComponent }}
-            username={warp.user?.username || '...'}
-            position={position}
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent the grid click from firing
-              handleWarpClick(warp);
-            }}
-            isNew={notifications.some(n => n.warpId === warp.id && n.type === 'new_warp')}
-            joinerCount={notifications.filter(n => n.warpId === warp.id && n.type === 'warp_join').length}
-            participantCount={warp.participants.length}
-          />
+          position && (
+            <WarpTile
+              key={warp.id}
+              warp={{ ...warp, icon: IconComponent }}
+              username={warp.user?.username || '...'}
+              position={position}
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation(); // Prevent the grid click from firing
+                handleWarpClick(warp);
+              }}
+              isNew={notifications.some(n => n.warpId === warp.id && n.type === 'new_warp')}
+              joinerCount={notifications.filter(n => n.warpId === warp.id && n.type === 'warp_join').length}
+              participantCount={warp.participants.length}
+            />
+          )
         );
       })}
 
@@ -311,7 +299,7 @@ const GridUIManager = () => {
           onSizeChange={setUpdateAvatarDialogSize}
         />
       )}
-      <AnimatePresence onExitComplete={() => setSegmentedControlVisible(false)}>
+      <AnimatePresence>
         {!isAnyDialogOpen && profile && (
           <motion.div
             className="absolute bottom-[20px] left-1/2 -translate-x-1/2 z-50"
@@ -319,10 +307,8 @@ const GridUIManager = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2 }}
-            onAnimationComplete={() => setSegmentedControlVisible(true)}
           >
             <SegmentedControl
-              ref={segmentedControlRef}
               options={['Everyone', 'Friends', 'Me']}
               value={segmentedControlSelection}
               onSelect={(option) => {
@@ -341,4 +327,4 @@ const GridUIManager = () => {
   );
 };
 
-export default GridUIManager; 
+export default GridUIManager;

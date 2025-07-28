@@ -97,7 +97,7 @@ const AppContent = () => {
 }
 
 const HomeApp = () => {
-  const { warps, loading, saving, createWarp, updateWarp, deleteWarp } = useWarps();
+  const { warps, saving, createWarp, updateWarp, deleteWarp } = useWarps();
   return (
     <GridStateProvider
       warps={warps}

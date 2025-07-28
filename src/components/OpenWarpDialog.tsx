@@ -25,8 +25,8 @@ const OpenWarpDialog = ({ warp, onClose, onSizeChange, onEdit }: OpenWarpDialogP
   const [isJoined, setIsJoined] = useState(false);
   const [participantProfiles, setParticipantProfiles] = useState<UserProfile[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
-
-  const participants = warp.participants || [];
+  //const participants = warp.participants || [];
+  const participants = React.useMemo(() => warp.participants || [], [warp.participants]);
   const prevParticipants = usePrevious(participants);
 
   useEffect(() => {
