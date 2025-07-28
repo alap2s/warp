@@ -13,6 +13,7 @@ import { Plus } from 'lucide-react';
 import OpenWarpDialog from './OpenWarpDialog';
 import LoadingDialog from './ui/LoadingDialog';
 import { useNotifications } from '@/lib/hooks/useNotifications';
+import { getUsersByIds, updateUserProfile } from '@/lib/user';
 import { markNotificationsAsRead } from '@/lib/warp';
 import type { Warp, UserProfile } from '@/lib/types';
 
