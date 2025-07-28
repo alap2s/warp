@@ -9,21 +9,20 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from './ui/Button';
 import { Merge, Edit, Share } from 'lucide-react';
 import { joinWarp, leaveWarp } from '@/lib/warp';
-import { getUsersByIds } from '@/lib/user';
 import { usePrevious } from '@/lib/utils';
 import { IconButton } from './ui/IconButton';
 
 interface OpenWarpDialogProps {
   warp: Warp;
+  participantProfiles: UserProfile[];
   onClose: () => void;
   onSizeChange?: (size: { width: number; height: number }) => void;
   onEdit: () => void;
 }
 
-const OpenWarpDialog = ({ warp, onClose, onSizeChange, onEdit }: OpenWarpDialogProps) => {
+const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEdit }: OpenWarpDialogProps) => {
   const { user: currentUser } = useAuth();
   const [isJoined, setIsJoined] = useState(false);
-  const [participantProfiles, setParticipantProfiles] = useState<UserProfile[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   //const participants = warp.participants || [];
   const participants = React.useMemo(() => warp.participants || [], [warp.participants]);
@@ -33,15 +32,6 @@ const OpenWarpDialog = ({ warp, onClose, onSizeChange, onEdit }: OpenWarpDialogP
     if (currentUser && participants) {
       setIsJoined(participants.includes(currentUser.uid));
     }
-    const fetchParticipantProfiles = async () => {
-      if (participants && participants.length > 0) {
-        const users = await getUsersByIds(participants);
-        setParticipantProfiles(Object.values(users) as UserProfile[]);
-      } else {
-        setParticipantProfiles([]);
-      }
-    };
-    fetchParticipantProfiles();
   }, [participants, currentUser]);
 
   useEffect(() => {
