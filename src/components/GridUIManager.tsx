@@ -180,7 +180,7 @@ const GridUIManager = () => {
   // Convert Firestore Timestamp to Date for MakeWarpDialog
   const warpToEditWithDate = warpToEdit && warpToEdit.when ? {
     ...warpToEdit,
-    when: warpToEdit.when.toDate ? warpToEdit.when.toDate() : new Date(warpToEdit.when),
+    when: warpToEdit.when.toDate(),
   } : null;
   
   const myWarp = user && warps ? warps.find(warp => warp.ownerId === user.uid) : null;
