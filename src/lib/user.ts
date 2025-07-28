@@ -2,6 +2,7 @@ import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, ge
 import { auth, db } from "./firebase";
 import { getWarpsByOwner, deleteWarp } from "./warp";
 import { deleteUser as deleteFirebaseUser } from "firebase/auth";
+import { UserProfile } from "./types";
 
 export const createUserProfile = async (uid: string, data: { username: string; icon: string; photoURL?: string }) => {
   try {
@@ -23,9 +24,9 @@ export const getUsersByIds = async (uids: string[]) => {
     const usersRef = collection(db, "users");
     const q = query(usersRef, where('uid', 'in', uids));
     const querySnapshot = await getDocs(q);
-    const users: { [key: string]: any } = {};
+    const users: { [key: string]: UserProfile } = {};
     querySnapshot.forEach((doc) => {
-      users[doc.id] = doc.data();
+      users[doc.id] = doc.data() as UserProfile;
     });
     return users;
   } catch (error) {

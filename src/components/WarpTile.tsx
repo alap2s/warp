@@ -1,12 +1,13 @@
 'use client';
 
 import React from 'react';
+import { Warp } from '@/lib/types';
 import { motion } from 'framer-motion';
 import { getIcon } from './MakeWarpDialog';
 import { formatShortDate } from '@/lib/utils';
 
 interface WarpTileProps {
-  warp: any;
+  warp: Warp;
   username: string;
   position?: { x: number; y: number };
   onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
@@ -26,7 +27,7 @@ const WarpTile = ({
   joinerCount,
   participantCount,
 }: WarpTileProps) => {
-  const { what, when, icon: Icon } = warp;
+  const Icon = getIcon(warp.icon);
   const tileRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {

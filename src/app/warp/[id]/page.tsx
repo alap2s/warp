@@ -38,7 +38,7 @@ const WarpLoader = () => {
 };
 
 const SharedWarpApp = () => {
-  const { warps, loading, saving, createWarp, updateWarp, deleteWarp } = useWarps();
+  const { warps, saving, createWarp, updateWarp, deleteWarp } = useWarps();
 
   return (
     <GridStateProvider
