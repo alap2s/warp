@@ -102,10 +102,11 @@ const OpenWarpDialog = ({ warp, onClose, onSizeChange, onEdit }: OpenWarpDialogP
 
   const { what, when, where } = warp;
   const date = when.toDate();
-
+  
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={true}>
       <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
+      
         <DialogHeader title={warp.user?.username || '...'}>
           {currentUser?.uid === warp.ownerId ? (
             <div className="flex gap-2">

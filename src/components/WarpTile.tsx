@@ -3,7 +3,7 @@
 import React from 'react';
 import { Warp } from '@/lib/types';
 import { motion } from 'framer-motion';
-//import { getIcon } from './MakeWarpDialog';
+import { getIcon } from './MakeWarpDialog';
 import { formatShortDate } from '@/lib/utils';
 
 interface WarpTileProps {
@@ -27,7 +27,7 @@ const WarpTile = ({
   joinerCount,
   participantCount,
 }: WarpTileProps) => {
-  const { icon: Icon } = warp;
+  const Icon = getIcon(warp.icon);
   const tileRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {

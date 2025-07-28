@@ -4,7 +4,7 @@ import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useGridState } from '@/context/GridStateContext';
-import { MakeWarpDialog,getIcon } from './MakeWarpDialog';
+import { MakeWarpDialog } from './MakeWarpDialog';
 import WarpTile from './WarpTile';
 import MeDialog from './MeDialog';
 import UpdateAvatarDialog from './UpdateAvatarDialog';
@@ -204,7 +204,8 @@ const GridUIManager = () => {
         )}
         {isOpenWarpDialogOpen && activeWarp && (
           <OpenWarpDialog
-            warp={{...activeWarp, icon: getIcon(activeWarp.icon)}}
+          warp={activeWarp}
+          //warp={{...activeWarp, icon: getIcon(activeWarp.icon)}}
             onClose={closeWarpDialog}
             onSizeChange={setDialogSize}
             onEdit={() => startEditWarp(activeWarp)}
@@ -217,7 +218,7 @@ const GridUIManager = () => {
         {activeWarp && !isOpenWarpDialogOpen && (
           <WarpTile
             key={activeWarp.id}
-            warp={{...activeWarp, icon: getIcon(activeWarp.icon)}}
+            warp={activeWarp}
             username={activeWarp.user?.username || '...'}
             onClick={() => handleWarpClick(activeWarp)}
             isNew={notifications.some(n => n.warpId === activeWarp.id && n.type === 'new_warp')}
@@ -232,7 +233,7 @@ const GridUIManager = () => {
         myWarp ? (
           <WarpTile
             key={myWarp.id}
-            warp={{ ...myWarp, icon: getIcon(myWarp.icon) }}
+            warp={myWarp}
             username={profile?.username || ''}
             onClick={() => handleWarpClick(myWarp)}
             isNew={notifications.some(n => n.warpId === myWarp.id && n.type === 'new_warp')}
@@ -248,13 +249,13 @@ const GridUIManager = () => {
       {showTiles && profile && otherWarps.map(warp => {
         // Hide the tile if it's the currently active one (since it's in the center)
         if (activeWarp && activeWarp.id === warp.id) return null;
-        const IconComponent = getIcon(warp.icon);
+        //const IconComponent = getIcon(warp.icon);
         const position = warpPositions[warp.id];
         return (
           position && (
             <WarpTile
               key={warp.id}
-              warp={{ ...warp, icon: IconComponent }}
+              warp={warp}
               username={warp.user?.username || '...'}
               position={position}
               onClick={(e: React.MouseEvent) => {
