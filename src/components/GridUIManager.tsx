@@ -12,7 +12,6 @@ import SegmentedControl from './ui/SegmentedControl';
 import { Plus } from 'lucide-react';
 import OpenWarpDialog from './OpenWarpDialog';
 import LoadingDialog from './ui/LoadingDialog';
-import { MakeWarpDialog } from './MakeWarpDialog';
 import { Warp } from '@/lib/types';
 import { useNotifications } from '@/lib/hooks/useNotifications';
 import { markNotificationsAsRead } from '@/lib/warp';
