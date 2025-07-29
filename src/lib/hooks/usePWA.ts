@@ -10,6 +10,7 @@ export const usePWA = () => {
   const [platform, setPlatform] = useState<Platform>('other');
 
   useEffect(() => {
+    const windowWithOpera = window as Window & { opera?: unknown; MSStream?: unknown };
     // This effect runs only on the client-side
     
     // Check display mode
@@ -17,10 +18,10 @@ export const usePWA = () => {
     setDisplayMode(isStandalone ? 'standalone' : 'browser');
 
     // Check platform
-    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-    if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) {
+    const userAgent = navigator.userAgent || navigator.vendor || windowWithOpera.opera;
+    if (/iPad|iPhone|iPod/.test(userAgent as string) && !windowWithOpera.MSStream) {
       setPlatform('iOS');
-    } else if (/android/i.test(userAgent)) {
+    } else if (/android/i.test(userAgent as string)) {
       setPlatform('Android');
     } else {
       setPlatform('Desktop');
