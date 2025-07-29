@@ -8,7 +8,7 @@ import ProfileDialog from '@/components/ProfileDialog';
 import { useSearchParams } from 'next/navigation';
 import { GridStateProvider, useGridState } from '@/context/GridStateContext';
 import { useWarps } from '@/lib/hooks/useWarps';
-import { createUserProfile } from '@/lib/user';
+import { createUserProfile, updateUserProfile } from '@/lib/user';
 import { signInAnonymously } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
@@ -69,20 +69,33 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
 };
 
 const AppContent = () => {
-  const { profile, loading } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
   const searchParams = useSearchParams();
-  const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    if (!loading && profile && onboardingComplete) {
+    // This effect is for redirecting users who arrived from a shared link
+    // after they complete onboarding.
+    if (!loading && profile) {
       const redirectTo = searchParams.get('redirectTo');
       if (redirectTo) {
         setRedirecting(true);
         window.location.href = redirectTo;
       }
     }
-  }, [loading, profile, onboardingComplete, searchParams]);
+  }, [loading, profile, searchParams]);
+
+  const handleOnboardingComplete = () => {
+    if (Notification.permission === 'default') {
+      setTimeout(async () => {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted' && user) {
+          await updateUserProfile(user.uid, { notificationsEnabled: true });
+          await refreshProfile();
+        }
+      }, 20000); // 20 seconds
+    }
+  };
 
   if (loading || redirecting) {
     return <div className="w-screen h-screen bg-black" />;
@@ -91,10 +104,12 @@ const AppContent = () => {
   return (
     <>
       <GridCanvas />
-      {!profile && <OnboardingFlow onComplete={() => setOnboardingComplete(true)} />}
+      {user && !profile && (
+        <OnboardingFlow onComplete={handleOnboardingComplete} />
+      )}
     </>
   );
-}
+};
 
 const HomeApp = () => {
   const { warps, saving, createWarp, updateWarp, deleteWarp } = useWarps();
