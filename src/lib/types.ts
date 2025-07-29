@@ -16,4 +16,8 @@ export interface Warp {
   ownerId: string;
   participants: string[];
   user?: UserProfile;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
 }
