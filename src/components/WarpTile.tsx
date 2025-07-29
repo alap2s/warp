@@ -5,6 +5,7 @@ import { Warp } from '@/lib/types';
 import { motion } from 'framer-motion';
 import { getIcon } from './MakeWarpDialog';
 import { formatShortDate } from '@/lib/utils';
+import { formatDistance, getCurrentCoordinates } from '@/lib/location';
 
 interface WarpTileProps {
   warp: Warp;
@@ -29,6 +30,7 @@ const WarpTile = ({
 }: WarpTileProps) => {
   const Icon = getIcon(warp.icon);
   const tileRef = React.useRef<HTMLDivElement>(null);
+  const [userCoords, setUserCoords] = React.useState<{ lat: number; lng: number } | null>(null);
 
   React.useEffect(() => {
     if (onSizeChange && tileRef.current) {
@@ -42,9 +44,21 @@ const WarpTile = ({
     }
   }, [onSizeChange]);
 
+  React.useEffect(() => {
+    getCurrentCoordinates()
+      .then(coords => {
+        setUserCoords(coords);
+      })
+      .catch(error => {
+        // It's okay if this fails, we just won't show the distance.
+        console.error("Could not get user coordinates for WarpTile:", error);
+      });
+  }, []);
+
   // Firestore Timestamps have a toDate() method
   const date = warp.when.toDate();
   const dateLabel = formatShortDate(date);
+  const distanceLabel = userCoords ? formatDistance(userCoords, warp.coordinates) : null;
 
   const tileContent = (
     <div 
@@ -71,7 +85,9 @@ const WarpTile = ({
       </div>
       <div className="flex flex-col items-center text-center">
         <p className="text-white text-xs font-medium truncate w-full">{username}</p>
-        <p className="text-white/70 text-[10px] font-light">{dateLabel}</p>
+        <p className="text-white/70 text-[10px] font-light">
+          {dateLabel}{distanceLabel && `, ${distanceLabel}`}
+        </p>
       </div>
     </div>
   );
