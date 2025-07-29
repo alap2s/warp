@@ -3,6 +3,7 @@ import { Timestamp } from "firebase/firestore";
 export interface UserProfile {
   username: string;
   icon: string;
+  photoURL?: string;
   notificationsEnabled?: boolean;
 }
 

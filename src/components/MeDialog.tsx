@@ -26,16 +26,35 @@ const MeDialog = ({
   onDeleteAccount: () => void;
   onUpdateProfile: (data: { notificationsEnabled: boolean }) => void;
 }) => {
-  const [notifications, setNotifications] = React.useState(userProfile.notificationsEnabled ?? true);
+  const [notifications, setNotifications] = React.useState(userProfile.notificationsEnabled ?? false);
+  const [permissionStatus, setPermissionStatus] = React.useState<NotificationPermission>('default');
+
+  React.useEffect(() => {
+    setPermissionStatus(Notification.permission);
+  }, []);
 
   const handleDelete = async () => {
     await deleteUserAccount();
     onDeleteAccount();
   };
 
-  const handleNotificationChange = (value: boolean) => {
-    setNotifications(value);
-    onUpdateProfile({ notificationsEnabled: value });
+  const handleNotificationChange = async (value: boolean) => {
+    if (value) {
+      if (permissionStatus === 'default') {
+        const permission = await Notification.requestPermission();
+        setPermissionStatus(permission);
+        if (permission === 'granted') {
+          setNotifications(true);
+          onUpdateProfile({ notificationsEnabled: true });
+        }
+      } else if (permissionStatus === 'granted') {
+        setNotifications(true);
+        onUpdateProfile({ notificationsEnabled: true });
+      }
+    } else {
+      setNotifications(false);
+      onUpdateProfile({ notificationsEnabled: false });
+    }
   };
 
   return (
@@ -62,7 +81,11 @@ const MeDialog = ({
             )}
             <p className="text-white/80 font-medium">Notifications</p>
           </div>
-          <NotificationToggle value={notifications} onChange={handleNotificationChange} />
+          <NotificationToggle 
+            value={notifications && permissionStatus === 'granted'} 
+            onChange={handleNotificationChange}
+            disabled={permissionStatus === 'denied'}
+          />
         </div>
         <hr className="border-white/20" />
         <div>
