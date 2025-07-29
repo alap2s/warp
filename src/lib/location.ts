@@ -1,4 +1,4 @@
-import { Warp } from '@/lib/warp';
+import { Warp } from '@/lib/types';
 
 export const getCurrentCoordinates = (): Promise<{ lat: number; lng: number }> => {
     return new Promise((resolve, reject) => {
