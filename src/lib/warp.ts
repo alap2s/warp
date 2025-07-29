@@ -3,7 +3,7 @@ import { db } from "./firebase";
 import { UserProfile, Warp } from "./types";
 import { getUserProfile } from './user';
 
-export const createWarp = async (data: { what: string; when: Date; where: string; icon: string; ownerId: string }) => {
+export const createWarp = async (data: { what: string; when: Date; where: string; icon: string; ownerId: string; coordinates?: { lat: number; lng: number } | null }) => {
   try {
     const docRef = await addDoc(collection(db, "warps"), {
       ...data,
@@ -96,7 +96,7 @@ export const getWarp = async (id: string) => {
   }
 };
 
-export const updateWarp = async (id: string, data: Partial<{ what: string; when: Date; where: string; icon: string }>) => {
+export const updateWarp = async (id: string, data: Partial<{ what: string; when: Date; where: string; icon: string; coordinates?: { lat: number; lng: number } | null }>) => {
   try {
     const warpRef = doc(db, "warps", id);
     await updateDoc(warpRef, data);
