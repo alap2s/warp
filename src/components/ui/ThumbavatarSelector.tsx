@@ -18,12 +18,12 @@ const ThumbavatarSelector = ({ onIconSelect, defaultValue }: ThumbavatarSelector
   ];
 
   return (
-    <div className="grid grid-cols-5 gap-1 mt-4">
+    <div className="grid grid-cols-5 gap-2">
       {avatarSeeds.map((seed) => (
         <div
           key={seed}
-          className={`flex items-center justify-center h-full cursor-pointer rounded-lg ${
-            defaultValue === seed ? 'border-2 border-white !rounded-2xl' : ''
+          className={`flex items-center justify-center h-full cursor-pointer rounded-xl ${
+            defaultValue === seed ? 'border-2 border-white' : ''
           }`}
           onClick={() => onIconSelect(seed)}
         >
