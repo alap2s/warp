@@ -60,8 +60,8 @@ export const ProfileDialog = ({
             className="pl-10"
           />
         </div>
-        <div className="flex flex-col items-center">
-          <p className="text-xs font-medium text-white/40 mt-1">Choose your thumbavatar</p>
+        <div className="flex flex-col gap-2 bg-white/5 border border-white/10 rounded-2xl p-3">
+          <p className="text-xs font-medium text-white/40 -mt-1">Choose your thumbavatar</p>
           <ThumbavatarSelector
             onIconSelect={handleIconSelect}
             defaultValue={selectedIconSeed}
