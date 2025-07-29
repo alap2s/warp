@@ -8,5 +8,6 @@ const nextConfig: NextConfig = {
 export default withPWA({
   dest: "public",
   register: true,
+  sw: "src/app/sw.ts",
   disable: process.env.NODE_ENV === "development",
 })(nextConfig);
