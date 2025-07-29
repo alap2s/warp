@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import DialogHeader from './ui/DialogHeader';
+import { getCurrentCoordinates, getAddressFromCoordinates, getCoordinatesFromAddress } from '@/lib/location';
 
 interface IconProps {
   className?: string;
@@ -139,6 +140,10 @@ export type FormData = {
   when: Date;
   where: string;
   icon: string;
+  coordinates?: {
+    lat: number;
+    lng: number;
+  } | null;
 };
 
 export const MakeWarpDialog = ({
@@ -165,27 +170,41 @@ export const MakeWarpDialog = ({
   const [whatValue, setWhatValue] = useState<string>(initialData?.what || '');
   const [whenValue, setWhenValue] = useState<Date>(initialData?.when ? new Date(initialData.when) : getInitialWhenDate());
   const [whereValue, setWhereValue] = useState<string>(initialData?.where || '');
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [currentIconName, setCurrentIconName] = useState<string>(initialData?.icon || 'LineSquiggle');
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!initialData) {
       setWhereValue('Fetching location...');
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords;
-            setWhereValue(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-          },
-          () => {
-            setWhereValue(''); // Clear on error
-          }
-        );
-      } else {
-        setWhereValue(''); // Clear if not supported
-      }
+      getCurrentCoordinates()
+        .then(coords => {
+          setCoordinates(coords);
+          return getAddressFromCoordinates(coords.lat, coords.lng);
+        })
+        .then(address => {
+          setWhereValue(address);
+        })
+        .catch(() => {
+          setWhereValue(''); // Clear on error
+        });
     }
   }, [initialData]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (whereValue && whereValue !== 'Fetching location...') {
+        getCoordinatesFromAddress(whereValue)
+          .then(coords => {
+            setCoordinates(coords);
+          });
+      }
+    }, 500); // 500ms debounce
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [whereValue]);
 
   useEffect(() => {
     const iconComponent = getIcon(whatValue);
@@ -217,6 +236,7 @@ export const MakeWarpDialog = ({
       when: whenValue,
       where: whereValue,
       icon: currentIconName,
+      coordinates: coordinates,
     };
     if (initialData) {
       onUpdate(data);
