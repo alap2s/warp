@@ -50,14 +50,17 @@ export const getUserProfile = async (uid: string) => {
   }
 };
 
-export const updateUserProfile = async (uid: string, data: { username?: string; icon?: string; photoURL?: string }) => {
-  try {
-    const docRef = doc(db, "users",uid);
-    await updateDoc(docRef, data);
-  } catch (error) {
-    console.error("Error updating user profile:", error);
-    throw new Error('Failed to update user profile. Please try again.');
+export const updateUserProfile = async (
+  userId: string,
+  data: {
+    username?: string;
+    icon?: string;
+    photoURL?: string;
+    notificationsEnabled?: boolean;
   }
+) => {
+  const userRef = doc(db, 'users', userId);
+  await updateDoc(userRef, data);
 };
 
 export const deleteUserProfile = async (uid: string) => {
