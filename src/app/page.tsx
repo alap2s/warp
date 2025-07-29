@@ -11,6 +11,7 @@ import { useWarps } from '@/lib/hooks/useWarps';
 import { createUserProfile, updateUserProfile } from '@/lib/user';
 import { signInAnonymously } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import GridUIManager from '@/components/GridUIManager';
 
 const GridCanvas = dynamic(() => import('@/components/InteractiveGrid'), {
   ssr: false,
@@ -104,7 +105,8 @@ const AppContent = () => {
   return (
     <>
       <GridCanvas />
-      {user && !profile && (
+      {user && profile && <GridUIManager />}
+      {!profile && (
         <OnboardingFlow onComplete={handleOnboardingComplete} />
       )}
     </>
