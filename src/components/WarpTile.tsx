@@ -58,7 +58,7 @@ const WarpTile = ({
   // Firestore Timestamps have a toDate() method
   const date = warp.when.toDate();
   const dateLabel = formatShortDate(date);
-  const distanceLabel = userCoords ? formatDistance(userCoords, warp.coordinates) : null;
+  const distanceLabel = userCoords ? formatDistance(userCoords, warp) : null;
 
   const tileContent = (
     <div 
