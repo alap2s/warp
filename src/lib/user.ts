@@ -1,4 +1,15 @@
-import { doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  limit,
+} from 'firebase/firestore';
 import { auth, db } from "./firebase";
 import { getWarpsByOwner, deleteWarp } from "./warp";
 import { deleteUser as deleteFirebaseUser } from "firebase/auth";
@@ -14,6 +25,12 @@ export const createUserProfile = async (uid: string, data: { username: string; i
     console.error("Error creating user profile:", error);
     throw new Error('Failed to create user profile. Please try again.');
   }
+};
+
+export const isUsernameAvailable = async (username: string): Promise<boolean> => {
+  const q = query(collection(db, 'users'), where('username', '==', username), limit(1));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.empty;
 };
 
 export const getUsersByIds = async (uids: string[]) => {
