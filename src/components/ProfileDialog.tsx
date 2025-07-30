@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { IconButton } from './ui/IconButton';
 import { Input } from './ui/Input';
 import { Check, AtSign, Loader2, CheckCircle2 } from 'lucide-react';
@@ -25,6 +25,7 @@ export const ProfileDialog = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedCheckUsername = useCallback(
     debounce(async (name) => {
       if (name.length >= 3) {
