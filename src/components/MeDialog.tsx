@@ -36,6 +36,7 @@ const MeDialog = ({
   const handleDelete = async () => {
     await deleteUserAccount();
     onDeleteAccount();
+    window.location.reload();
   };
 
   const handleNotificationChange = async (value: boolean) => {
