@@ -16,6 +16,7 @@ import { useNotifications } from '@/lib/hooks/useNotifications';
 import { getUsersByIds, updateUserProfile } from '@/lib/user';
 import { markNotificationsAsRead } from '@/lib/warp';
 import type { Warp, UserProfile } from '@/lib/types';
+import { debounce } from 'lodash';
 
 const CreateWarpTile = ({ onClick }: { onClick: () => void }) => {
   const tileRef = React.useRef<HTMLDivElement>(null);
@@ -83,14 +84,19 @@ const GridUIManager = () => {
   const [screenSize, setScreenSize] = React.useState({ width: 0, height: 0 });
 
   React.useEffect(() => {
-    const updateScreenSize = () => {
+    const debouncedUpdate = debounce(() => {
       setScreenSize({ width: window.innerWidth, height: window.innerHeight });
-    };
+    }, 200);
 
-    window.addEventListener('resize', updateScreenSize);
-    updateScreenSize();
+    window.addEventListener('resize', debouncedUpdate);
+    
+    // Initial size set
+    debouncedUpdate();
 
-    return () => window.removeEventListener('resize', updateScreenSize);
+    return () => {
+      window.removeEventListener('resize', debouncedUpdate);
+      debouncedUpdate.cancel();
+    }
   }, []);
 
   React.useEffect(() => {
@@ -100,36 +106,59 @@ const GridUIManager = () => {
     const TILE_HEIGHT = 84;
     const GAP = 16;
 
-    const layoutPattern = [
-      // Ring 1
-      { col: -1, row: 0 }, { col: 1, row: 0 },
-      // Ring 2
-      { col: -0.5, row: -1 }, { col: 0.5, row: -1 },
-      { col: -0.5, row: 1 }, { col: 0.5, row: 1 },
-      // Ring 3
-      { col: -2, row: 0 }, { col: 2, row: 0 },
-      // Ring 4
-      { col: -1, row: -2 }, { col: 0, row: -2 }, { col: 1, row: -2 },
-      { col: -1, row: 2 }, { col: 0, row: 2 }, { col: 1, row: 2 },
-    ];
+    const cols = Math.floor(screenSize.width / (TILE_WIDTH + GAP));
+    const rows = Math.floor(screenSize.height / (TILE_HEIGHT + GAP));
 
     const newPositions: { [key: string]: { x: number, y: number } } = {};
     const otherWarps = user ? warps.filter(warp => warp.ownerId !== user.uid) : warps;
+    let warpIndex = 0;
+    
+    // Loop outwards from the center row
+    for (let j = 0; warpIndex < otherWarps.length && j < rows; j++) {
+      const row = (j % 2 === 0) ? (j / 2) : -(Math.ceil(j / 2));
+      const isStaggered = Math.abs(row) % 2 !== 0;
 
-    otherWarps.forEach((warp, index) => {
-      if (index < layoutPattern.length) {
-        const { col, row } = layoutPattern[index];
-
-        const x = (screenSize.width / 2) + col * (TILE_WIDTH + GAP) - (TILE_WIDTH / 2);
+      // Even rows (0, 2, -2...) have a center tile (except for row 0)
+      if (!isStaggered && row !== 0) {
+        if (warpIndex >= otherWarps.length) break;
+        const x = (screenSize.width / 2) - (TILE_WIDTH / 2);
         const y = (screenSize.height / 2) + row * (TILE_HEIGHT + GAP) - (TILE_HEIGHT / 2);
-        
         if (x >= 0 && x <= screenSize.width - TILE_WIDTH && y >= 0 && y <= screenSize.height - TILE_HEIGHT) {
+          const warp = otherWarps[warpIndex];
           newPositions[warp.id] = { x, y };
+          warpIndex++;
         }
       }
-    });
+
+      for (let i = 1; warpIndex < otherWarps.length && i < cols / 2; i++) {
+        const colOffset = isStaggered ? (i - 0.5) : i;
+
+        // Add tile to the right
+        if (warpIndex < otherWarps.length) {
+          const x = (screenSize.width / 2) + colOffset * (TILE_WIDTH + GAP) - (TILE_WIDTH / 2);
+          const y = (screenSize.height / 2) + row * (TILE_HEIGHT + GAP) - (TILE_HEIGHT / 2);
+          if (x >= 0 && x <= screenSize.width - TILE_WIDTH && y >= 0 && y <= screenSize.height - TILE_HEIGHT) {
+            const warp = otherWarps[warpIndex];
+            newPositions[warp.id] = { x, y };
+            warpIndex++;
+          }
+        }
+        
+        // Add tile to the left
+        if (warpIndex < otherWarps.length) {
+          const x = (screenSize.width / 2) - colOffset * (TILE_WIDTH + GAP) - (TILE_WIDTH / 2);
+          const y = (screenSize.height / 2) + row * (TILE_HEIGHT + GAP) - (TILE_HEIGHT / 2);
+          if (x >= 0 && x <= screenSize.width - TILE_WIDTH && y >= 0 && y <= screenSize.height - TILE_HEIGHT) {
+            const warp = otherWarps[warpIndex];
+            newPositions[warp.id] = { x, y };
+            warpIndex++;
+          }
+        }
+      }
+    }
     
     setWarpPositions(newPositions);
+    
   }, [warps, user, screenSize]);
 
   React.useEffect(() => {
@@ -233,7 +262,10 @@ const GridUIManager = () => {
                 setParticipantProfiles([]);
               }}
               onSizeChange={setDialogSize}
-              onEdit={() => startEditWarp(activeWarp)}
+              onEdit={() => {
+                closeWarpDialog();
+                startEditWarp(activeWarp)
+              }}
             />
           )
         )}
