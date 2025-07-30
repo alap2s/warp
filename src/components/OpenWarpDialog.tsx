@@ -90,6 +90,14 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
     }
   };
 
+  const handleLocationClick = () => {
+    if (warp.coordinates) {
+      const { lat, lng } = warp.coordinates;
+      const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+      window.open(url, '_blank');
+    }
+  };
+
   const { what, when, where } = warp;
   const date = when.toDate();
   
@@ -136,7 +144,9 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
           <hr className="border-white/20" />
           <div>
             <p className="text-sm text-neutral-400">Where</p>
-            <p className="text-lg text-white">{where}</p>
+            <div className="flex items-center gap-2 mt-1 cursor-pointer" onClick={handleLocationClick}>
+              <p className="text-lg text-white">{where}</p>
+            </div>
           </div>
           {participantProfiles.length > 0 && (
             <>

@@ -7,7 +7,7 @@ import {
   X, Check, Clock, MapPin, LineSquiggle, Coffee, MessageSquare, Code, Plane,
   Book, Mic, Film, Music, ShoppingCart, Utensils, Beer, Dumbbell, Sun, Moon,
   Wine, Sofa, Tv2, Home, PartyPopper, Palette, CakeSlice, CupSoda, Trophy,
-  Gamepad2, Bike, HeartPulse, Swords, Play, Sailboat, Ship, Dices, Trash2, Tag, Link2
+  Gamepad2, Bike, HeartPulse, Swords, Play, Sailboat, Ship, Dices, Trash2, Tag, Link2, Loader2
 } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import DialogHeader from './ui/DialogHeader';
@@ -171,12 +171,16 @@ export const MakeWarpDialog = ({
   const [whenValue, setWhenValue] = useState<Date>(initialData?.when ? new Date(initialData.when) : getInitialWhenDate());
   const [whereValue, setWhereValue] = useState<string>(initialData?.where || '');
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [geocodingStatus, setGeocodingStatus] = useState<'success' | 'error' | null>(null);
+  const [foundLocationName, setFoundLocationName] = useState<string | null>(null);
   const [currentIconName, setCurrentIconName] = useState<string>(initialData?.icon || 'LineSquiggle');
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!initialData) {
       setWhereValue('Fetching location...');
+      setIsGeocoding(true);
       getCurrentCoordinates()
         .then(coords => {
           setCoordinates(coords);
@@ -184,19 +188,51 @@ export const MakeWarpDialog = ({
         })
         .then(address => {
           setWhereValue(address);
+          setFoundLocationName(address);
+          setGeocodingStatus('success');
         })
         .catch(() => {
           setWhereValue(''); // Clear on error
+          setGeocodingStatus('error');
+        })
+        .finally(() => {
+          setIsGeocoding(false);
         });
     }
   }, [initialData]);
 
   useEffect(() => {
+    if (!whereValue) {
+        setGeocodingStatus(null);
+        setFoundLocationName(null);
+        setCoordinates(null);
+        return;
+    }
+
     const handler = setTimeout(() => {
       if (whereValue && whereValue !== 'Fetching location...') {
+        setIsGeocoding(true);
+        setGeocodingStatus(null);
         getCoordinatesFromAddress(whereValue)
           .then(coords => {
-            setCoordinates(coords);
+            if (coords) {
+                setCoordinates(coords);
+                return getAddressFromCoordinates(coords.lat, coords.lng);
+            } else {
+                throw new Error("Coordinates not found");
+            }
+          })
+          .then(address => {
+            setFoundLocationName(address);
+            setGeocodingStatus('success');
+          })
+          .catch(() => {
+            setCoordinates(null);
+            setFoundLocationName(null);
+            setGeocodingStatus('error');
+          })
+          .finally(() => {
+            setIsGeocoding(false);
           });
       }
     }, 500); // 500ms debounce
@@ -265,6 +301,20 @@ export const MakeWarpDialog = ({
   });
 
   const CurrentIcon = iconMap[currentIconName] || LineSquiggle;
+
+  const MapPinCheck = () => (
+    <div className="relative">
+      <MapPin className="text-white" size={16} strokeWidth={2.25} />
+      <Check className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full" size={10} strokeWidth={3} />
+    </div>
+  );
+  
+  const MapPinX = () => (
+    <div className="relative">
+      <MapPin className="text-white" size={16} strokeWidth={2.25} />
+      <X className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full" size={10} strokeWidth={3} />
+    </div>
+  );
 
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange}>
@@ -343,7 +393,24 @@ export const MakeWarpDialog = ({
             onChange={(e) => setWhereValue(e.target.value)}
             className="pl-10"
           />
-          <MapPin className={`absolute left-3 top-1/2 -translate-y-1/2 ${whereValue && whereValue !== 'Fetching location...' ? 'text-white' : 'text-gray-400'}`} size={16} strokeWidth={2.25} />
+          <div className="absolute left-3 top-1/2 -translate-y-1/2">
+            {isGeocoding ? (
+              <Loader2 className="animate-spin text-gray-400" size={16} strokeWidth={2.25} />
+            ) : geocodingStatus === 'success' ? (
+              <MapPinCheck />
+            ) : geocodingStatus === 'error' ? (
+              <MapPinX />
+            ) : (
+              <MapPin className={`${whereValue && whereValue !== 'Fetching location...' ? 'text-white' : 'text-gray-400'}`} size={16} strokeWidth={2.25} />
+            )}
+          </div>
+        </div>
+        <div className="h-4"> 
+          {geocodingStatus && foundLocationName && whereValue !== foundLocationName && (
+            <div className={`text-xs px-3 text-white/40`}>
+              {geocodingStatus === 'success' ? `Found: ${foundLocationName}` : `Couldn't find that location.`}
+            </div>
+          )}
         </div>
     </Dialog>
   );
