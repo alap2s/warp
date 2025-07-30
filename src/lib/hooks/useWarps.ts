@@ -6,9 +6,10 @@ import { useAuth } from '@/context/AuthContext';
 import { FormData } from '@/components/MakeWarpDialog';
 import { getUsersByIds } from '@/lib/user';
 import { Warp } from '@/lib/types';
+import { Timestamp } from 'firebase/firestore';
 
 export const useWarps = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [warps, setWarps] = useState<Warp[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -37,16 +38,32 @@ export const useWarps = () => {
   }, [user]);
 
   const createWarp = async (data: Omit<FormData, 'icon'> & { icon: string }) => {
-    if (!user) return;
+    if (!user || !profile) return;
     setSaving(true);
     const existingWarps = await getWarpsByOwner(user.uid);
     for (const warp of existingWarps) {
       await removeWarp(warp.id);
     }
-    await addWarp({
+    const newWarpData = {
       ...data,
       ownerId: user.uid,
-    });
+    };
+    const newWarpId = await addWarp(newWarpData);
+    
+    // Optimistic update
+    const newWarp: Warp = {
+      ...newWarpData,
+      id: newWarpId,
+      when: Timestamp.fromDate(data.when),
+      participants: [],
+      user: {
+        username: profile.username,
+        icon: profile.icon,
+      },
+      coordinates: data.coordinates || undefined,
+    };
+
+    setWarps(prevWarps => [...prevWarps.filter(w => w.ownerId !== user.uid), newWarp]);
     setSaving(false);
   };
 
