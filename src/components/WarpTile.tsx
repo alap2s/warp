@@ -62,7 +62,7 @@ const WarpTile = ({
 
   const tileContent = (
     <div 
-      className="w-[84px] h-[84px] bg-black border-2 border-white/40 rounded-[24px] p-4 flex flex-col items-center justify-between cursor-pointer"
+      className="w-[84px] h-[84px] bg-black border-2 border-white/40 rounded-[24px] p-2 flex flex-col items-center justify-center gap-1 cursor-pointer"
       onClick={onClick}
     >
       <div className="absolute -top-2 -right-2">
@@ -85,7 +85,7 @@ const WarpTile = ({
       </div>
       <div className="flex flex-col items-center text-center">
         <p className="text-white text-xs font-medium truncate w-full">{username}</p>
-        <p className="text-white/70 text-[10px] font-light">
+        <p className="text-white/70 text-[10px] font-light w-full truncate">
           {dateLabel}{distanceLabel && `, ${distanceLabel}`}
         </p>
       </div>
