@@ -21,14 +21,14 @@ export const getUsersByIds = async (uids: string[]) => {
     return {};
   }
   try {
-    const usersRef = collection(db, "users");
-    const q = query(usersRef, where('uid', 'in', uids));
-    const querySnapshot = await getDocs(q);
+  const usersRef = collection(db, "users");
+  const q = query(usersRef, where('uid', 'in', uids));
+  const querySnapshot = await getDocs(q);
     const users: { [key: string]: UserProfile } = {};
-    querySnapshot.forEach((doc) => {
+  querySnapshot.forEach((doc) => {
       users[doc.id] = doc.data() as UserProfile;
-    });
-    return users;
+  });
+  return users;
   } catch (error) {
     console.error("Error getting user profiles by IDs:", error);
     throw new Error('Failed to retrieve user profiles. Please try again.');
