@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { getIcon } from './MakeWarpDialog';
 import { formatShortDate } from '@/lib/utils';
 import { formatDistance, getCurrentCoordinates } from '@/lib/location';
+import { Timestamp } from 'firebase/firestore';
 
 interface WarpTileProps {
   warp: Warp;
@@ -57,9 +58,28 @@ const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({
       });
   }, []);
 
-  // Firestore Timestamps have a toDate() method
-  const date = warp.when.toDate();
-  const dateLabel = formatShortDate(date);
+  const formatWarpTime = (when: Date | Timestamp) => {
+    const date = when instanceof Timestamp ? when.toDate() : new Date(when);
+    const now = new Date();
+
+    const diffMinutes = (date.getTime() - now.getTime()) / 60000;
+
+    if (diffMinutes > -120 && diffMinutes <= 15) {
+      return "Now";
+    }
+
+    const isToday = date.getDate() === now.getDate() &&
+                  date.getMonth() === now.getMonth() &&
+                  date.getFullYear() === now.getFullYear();
+
+    if (isToday) {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    } else {
+      return formatShortDate(date);
+    }
+  };
+
+  const dateLabel = formatWarpTime(warp.when);
   const distanceLabel = userCoords ? formatDistance(userCoords, warp) : null;
 
   const tileContent = (
