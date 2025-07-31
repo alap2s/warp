@@ -52,7 +52,7 @@ const SharedWarpApp = () => {
       <WarpLoader />
     </GridStateProvider>
   );
-}
+  }
 
 
 const SharedWarpPage = () => {
