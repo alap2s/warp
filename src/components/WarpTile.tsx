@@ -32,15 +32,17 @@ const WarpTile = ({
   const tileRef = React.useRef<HTMLDivElement>(null);
   const [userCoords, setUserCoords] = React.useState<{ lat: number; lng: number } | null>(null);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     if (onSizeChange && tileRef.current) {
-      const { width, height } = tileRef.current.getBoundingClientRect();
-      onSizeChange({ width, height });
-    }
-    return () => {
-      if (onSizeChange) {
-        onSizeChange(null);
-      }
+      const observer = new ResizeObserver(entries => {
+        const entry = entries[0];
+        if (entry) {
+          const { width, height } = entry.contentRect;
+          onSizeChange({ width, height });
+        }
+      });
+      observer.observe(tileRef.current);
+      return () => observer.disconnect();
     }
   }, [onSizeChange]);
 

@@ -7,7 +7,8 @@ import {
   X, Check, Clock, MapPin, LineSquiggle, Coffee, MessageSquare, Code, Plane,
   Book, Mic, Film, Music, ShoppingCart, Utensils, Beer, Dumbbell, Sun, Moon,
   Wine, Sofa, Tv2, Home, PartyPopper, Palette, CakeSlice, CupSoda, Trophy,
-  Gamepad2, Bike, HeartPulse, Swords, Play, Sailboat, Ship, Dices, Trash2, Tag, Link2, Loader2
+  Gamepad2, Bike, HeartPulse, Swords, Play, Sailboat, Ship, Dices, Trash2, Tag, Link2, Loader2,
+  MapPinCheckInside, MapPinXInside
 } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import DialogHeader from './ui/DialogHeader';
@@ -302,20 +303,6 @@ export const MakeWarpDialog = ({
 
   const CurrentIcon = iconMap[currentIconName] || LineSquiggle;
 
-  const MapPinCheck = () => (
-    <div className="relative">
-      <MapPin className="text-white" size={16} strokeWidth={2.25} />
-      <Check className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full" size={10} strokeWidth={3} />
-    </div>
-  );
-  
-  const MapPinX = () => (
-    <div className="relative">
-      <MapPin className="text-white" size={16} strokeWidth={2.25} />
-      <X className="absolute -bottom-1 -right-1 bg-gray-800 rounded-full" size={10} strokeWidth={3} />
-    </div>
-  );
-
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange}>
       <DialogHeader title={initialData ? ['Edit'] : ['Make', 'Warp']}>
@@ -343,6 +330,7 @@ export const MakeWarpDialog = ({
             className="pl-10"
             value={whatValue}
             onChange={(e) => setWhatValue(e.target.value)}
+            maxLength={60}
           />
           <CurrentIcon className={`absolute left-3 top-1/2 -translate-y-1/2 ${whatValue ? 'text-white' : 'text-gray-400'}`} size={16} strokeWidth={2.25} />
         </div>
@@ -397,9 +385,9 @@ export const MakeWarpDialog = ({
             {isGeocoding ? (
               <Loader2 className="animate-spin text-gray-400" size={16} strokeWidth={2.25} />
             ) : geocodingStatus === 'success' ? (
-              <MapPinCheck />
+              <MapPinCheckInside className="text-white" size={16} strokeWidth={2.25} />
             ) : geocodingStatus === 'error' ? (
-              <MapPinX />
+              <MapPinXInside className="text-white" size={16} strokeWidth={2.25} />
             ) : (
               <MapPin className={`${whereValue && whereValue !== 'Fetching location...' ? 'text-white' : 'text-gray-400'}`} size={16} strokeWidth={2.25} />
             )}

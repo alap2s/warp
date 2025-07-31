@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useGridState } from '@/context/GridStateContext';
@@ -18,17 +18,22 @@ import { markNotificationsAsRead } from '@/lib/warp';
 import type { Warp, UserProfile } from '@/lib/types';
 import { debounce } from 'lodash';
 
-const CreateWarpTile = ({ onClick }: { onClick: () => void }) => {
+const CreateWarpTile = ({ onClick, onSizeChange }: { onClick: () => void, onSizeChange?: (size: { width: number, height: number } | null) => void }) => {
   const tileRef = React.useRef<HTMLDivElement>(null);
-  const { setCenterTileSize } = useGridState();
 
-  React.useEffect(() => {
-    if (tileRef.current) {
-      const { width, height } = tileRef.current.getBoundingClientRect();
-      setCenterTileSize({ width, height });
+  useLayoutEffect(() => {
+    if (onSizeChange && tileRef.current) {
+      const observer = new ResizeObserver(entries => {
+        const entry = entries[0];
+        if (entry) {
+          const { width, height } = entry.contentRect;
+          onSizeChange({ width, height });
+        }
+      });
+      observer.observe(tileRef.current);
+      return () => observer.disconnect();
     }
-    return () => setCenterTileSize(null);
-  }, [setCenterTileSize]);
+  }, [onSizeChange]);
   
   return (
     <motion.div
@@ -75,6 +80,7 @@ const GridUIManager = () => {
     meDialogSize,
     isLoading,
     warps,
+    setCenterTileSize,
   } = useGridState();
   const [isPreparingWarp, setIsPreparingWarp] = React.useState(false);
   const [participantProfiles, setParticipantProfiles] = React.useState<UserProfile[]>([]);
@@ -282,6 +288,7 @@ const GridUIManager = () => {
             isNew={notifications.some(n => n.warpId === activeWarp.id && n.type === 'new_warp')}
             joinerCount={notifications.filter(n => n.warpId === activeWarp.id && n.type === 'warp_join').length}
             participantCount={activeWarp.participants.length}
+            onSizeChange={setCenterTileSize}
           />
         )}
       </AnimatePresence>
@@ -297,9 +304,10 @@ const GridUIManager = () => {
             isNew={notifications.some(n => n.warpId === myWarp.id && n.type === 'new_warp')}
             joinerCount={notifications.filter(n => n.warpId === myWarp.id && n.type === 'warp_join').length}
             participantCount={myWarp.participants.length}
+            onSizeChange={setCenterTileSize}
           />
         ) : (
-          profile && <CreateWarpTile onClick={openMakeWarpDialog} />
+          profile && <CreateWarpTile onClick={openMakeWarpDialog} onSizeChange={setCenterTileSize} />
         )
       )}
 
@@ -334,7 +342,10 @@ const GridUIManager = () => {
             <MeDialog
               key={profile.icon}
               userProfile={profile}
-              onClose={() => setMeDialogSize(null)}
+              onClose={() => {
+                setMeDialogSize(null)
+                setSegmentedControlSelection('Friends');
+              }}
               onSizeChange={setMeDialogSize}
               onUpdateAvatar={() => {
                 setMeDialogSize(null);
