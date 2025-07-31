@@ -12,37 +12,22 @@ interface WarpTileProps {
   username: string;
   position?: { x: number; y: number };
   onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
-  onSizeChange?: (size: { width: number; height: number } | null) => void;
   isNew?: boolean;
   joinerCount?: number;
   participantCount?: number;
 }
 
-const WarpTile = ({ 
+const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({ 
   warp, 
   username, 
   position,
   onClick,
-  onSizeChange,
   isNew,
   joinerCount,
   participantCount,
-}: WarpTileProps) => {
+}, ref) => {
   const Icon = getIcon(warp.icon);
-  const tileRef = React.useRef<HTMLDivElement>(null);
   const [userCoords, setUserCoords] = React.useState<{ lat: number; lng: number } | null>(null);
-
-  React.useEffect(() => {
-    if (onSizeChange && tileRef.current) {
-      const { width, height } = tileRef.current.getBoundingClientRect();
-      onSizeChange({ width, height });
-    }
-    return () => {
-      if (onSizeChange) {
-        onSizeChange(null);
-      }
-    }
-  }, [onSizeChange]);
 
   React.useEffect(() => {
     getCurrentCoordinates()
@@ -95,7 +80,7 @@ const WarpTile = ({
   if (position) {
     return (
       <motion.div
-        ref={tileRef}
+        ref={ref}
         className="absolute"
         style={{ top: position.y, left: position.x }}
         initial={{ opacity: 0, scale: 0.8 }}
@@ -109,7 +94,7 @@ const WarpTile = ({
 
   return (
     <motion.div
-      ref={tileRef}
+      ref={ref}
       className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -119,6 +104,6 @@ const WarpTile = ({
       {tileContent}
     </motion.div>
   );
-};
+});
 
 export default WarpTile; 
