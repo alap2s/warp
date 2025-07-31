@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LucideProps, Loader2, LineSquiggle } from 'lucide-react';
-import { keywordToIconName } from '@/lib/icon-map'; // Assuming this is where your map is
 
 interface DynamicIconProps extends LucideProps {
   name: string;
