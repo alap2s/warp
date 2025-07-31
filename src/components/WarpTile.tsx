@@ -123,4 +123,6 @@ const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({
   );
 });
 
+WarpTile.displayName = 'WarpTile';
+
 export default WarpTile; 
