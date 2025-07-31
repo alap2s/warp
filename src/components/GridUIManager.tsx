@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useGridState } from '@/context/GridStateContext';
@@ -18,21 +18,25 @@ import { markNotificationsAsRead } from '@/lib/warp';
 import type { Warp, UserProfile } from '@/lib/types';
 import { debounce } from 'lodash';
 
-const CreateWarpTile = ({ onClick }: { onClick: () => void }) => {
-  const tileRef = React.useRef<HTMLDivElement>(null);
-  const { setCenterTileSize } = useGridState();
-
-  React.useEffect(() => {
-    if (tileRef.current) {
-      const { width, height } = tileRef.current.getBoundingClientRect();
-      setCenterTileSize({ width, height });
+const CreateWarpTile = React.forwardRef<HTMLDivElement, { onClick: () => void, onSizeChange?: (size: { width: number, height: number } | null) => void }>(({ onClick, onSizeChange }, ref) => {
+  useLayoutEffect(() => {
+    const currentRef = ref && 'current' in ref ? ref.current : null;
+    if (onSizeChange && currentRef) {
+      const observer = new ResizeObserver(entries => {
+        const entry = entries[0];
+        if (entry) {
+          const { width, height } = entry.contentRect;
+          onSizeChange({ width, height });
+        }
+      });
+      observer.observe(currentRef);
+      return () => observer.disconnect();
     }
-    return () => setCenterTileSize(null);
-  }, [setCenterTileSize]);
+  }, [onSizeChange, ref]);
   
   return (
     <motion.div
-      ref={tileRef}
+      ref={ref}
       className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -49,7 +53,8 @@ const CreateWarpTile = ({ onClick }: { onClick: () => void }) => {
       </div>
     </motion.div>
   )
-};
+});
+CreateWarpTile.displayName = 'CreateWarpTile';
 
 
 const GridUIManager = () => {
@@ -75,7 +80,9 @@ const GridUIManager = () => {
     meDialogSize,
     isLoading,
     warps,
+    setCenterTileSize,
   } = useGridState();
+  const centerTileRef = React.useRef<HTMLDivElement>(null);
   const [isPreparingWarp, setIsPreparingWarp] = React.useState(false);
   const [participantProfiles, setParticipantProfiles] = React.useState<UserProfile[]>([]);
   const [isUpdatingAvatar, setUpdatingAvatar] = React.useState(false);
@@ -275,6 +282,7 @@ const GridUIManager = () => {
         {/* Render the active warp (from another user) in the center */}
         {activeWarp && !isOpenWarpDialogOpen && (
           <WarpTile
+            ref={centerTileRef}
             key={activeWarp.id}
             warp={activeWarp}
             username={activeWarp.user?.username || '...'}
@@ -282,6 +290,7 @@ const GridUIManager = () => {
             isNew={notifications.some(n => n.warpId === activeWarp.id && n.type === 'new_warp')}
             joinerCount={notifications.filter(n => n.warpId === activeWarp.id && n.type === 'warp_join').length}
             participantCount={activeWarp.participants.length}
+            onSizeChange={setCenterTileSize}
           />
         )}
       </AnimatePresence>
@@ -290,6 +299,7 @@ const GridUIManager = () => {
       {!activeWarp && showTiles && (
         myWarp ? (
           <WarpTile
+            ref={centerTileRef}
             key={myWarp.id}
             warp={myWarp}
             username={profile?.username || ''}
@@ -297,9 +307,10 @@ const GridUIManager = () => {
             isNew={notifications.some(n => n.warpId === myWarp.id && n.type === 'new_warp')}
             joinerCount={notifications.filter(n => n.warpId === myWarp.id && n.type === 'warp_join').length}
             participantCount={myWarp.participants.length}
+            onSizeChange={setCenterTileSize}
           />
         ) : (
-          profile && <CreateWarpTile onClick={openMakeWarpDialog} />
+          profile && <CreateWarpTile ref={centerTileRef} onClick={openMakeWarpDialog} onSizeChange={setCenterTileSize} />
         )
       )}
 
@@ -334,7 +345,10 @@ const GridUIManager = () => {
             <MeDialog
               key={profile.icon}
               userProfile={profile}
-              onClose={() => setMeDialogSize(null)}
+              onClose={() => {
+                setMeDialogSize(null)
+                setSegmentedControlSelection('Friends');
+              }}
               onSizeChange={setMeDialogSize}
               onUpdateAvatar={() => {
                 setMeDialogSize(null);

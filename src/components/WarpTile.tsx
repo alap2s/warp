@@ -18,7 +18,7 @@ interface WarpTileProps {
   participantCount?: number;
 }
 
-const WarpTile = ({ 
+const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({ 
   warp, 
   username, 
   position,
@@ -27,22 +27,24 @@ const WarpTile = ({
   isNew,
   joinerCount,
   participantCount,
-}: WarpTileProps) => {
+}, ref) => {
   const Icon = getIcon(warp.icon);
-  const tileRef = React.useRef<HTMLDivElement>(null);
   const [userCoords, setUserCoords] = React.useState<{ lat: number; lng: number } | null>(null);
 
-  React.useEffect(() => {
-    if (onSizeChange && tileRef.current) {
-      const { width, height } = tileRef.current.getBoundingClientRect();
-      onSizeChange({ width, height });
+  React.useLayoutEffect(() => {
+    const currentRef = ref && 'current' in ref ? ref.current : null;
+    if (onSizeChange && currentRef) {
+      const observer = new ResizeObserver(entries => {
+        const entry = entries[0];
+        if (entry) {
+          const { width, height } = entry.contentRect;
+          onSizeChange({ width, height });
+        }
+      });
+      observer.observe(currentRef);
+      return () => observer.disconnect();
     }
-    return () => {
-      if (onSizeChange) {
-        onSizeChange(null);
-      }
-    }
-  }, [onSizeChange]);
+  }, [onSizeChange, ref]);
 
   React.useEffect(() => {
     getCurrentCoordinates()
@@ -95,7 +97,7 @@ const WarpTile = ({
   if (position) {
     return (
       <motion.div
-        ref={tileRef}
+        ref={ref}
         className="absolute"
         style={{ top: position.y, left: position.x }}
         initial={{ opacity: 0, scale: 0.8 }}
@@ -109,7 +111,7 @@ const WarpTile = ({
 
   return (
     <motion.div
-      ref={tileRef}
+      ref={ref}
       className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -119,6 +121,8 @@ const WarpTile = ({
       {tileContent}
     </motion.div>
   );
-};
+});
+
+WarpTile.displayName = 'WarpTile';
 
 export default WarpTile; 
