@@ -7,7 +7,7 @@ import DialogHeader from './ui/DialogHeader';
 import { formatEuropeanDate, formatTime } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from './ui/Button';
-import { Merge, Edit, Share } from 'lucide-react';
+import { Merge, Edit, Share, SquareArrowOutUpRight } from 'lucide-react';
 import { joinWarp, leaveWarp } from '@/lib/warp';
 import { usePrevious } from '@/lib/utils';
 import { IconButton } from './ui/IconButton';
@@ -144,8 +144,11 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
           <hr className="border-white/20" />
           <div>
             <p className="text-sm text-neutral-400">Where</p>
-            <div className="flex items-center gap-2 mt-1 cursor-pointer" onClick={handleLocationClick}>
+            <div className="flex items-center justify-between cursor-pointer gap-2" onClick={handleLocationClick}>
               <p className="text-lg text-white">{where}</p>
+              {warp.coordinates && (
+                <SquareArrowOutUpRight className="text-white/40" size={24} strokeWidth={2.5} />
+              )}
             </div>
           </div>
           {participantProfiles.length > 0 && (
