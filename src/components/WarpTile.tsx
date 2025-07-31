@@ -61,6 +61,13 @@ const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({
   const formatWarpTime = (when: Date | Timestamp) => {
     const date = when instanceof Timestamp ? when.toDate() : new Date(when);
     const now = new Date();
+
+    const diffMinutes = (date.getTime() - now.getTime()) / 60000;
+
+    if (diffMinutes > -120 && diffMinutes <= 15) {
+      return "Now";
+    }
+
     const isToday = date.getDate() === now.getDate() &&
                   date.getMonth() === now.getMonth() &&
                   date.getFullYear() === now.getFullYear();
