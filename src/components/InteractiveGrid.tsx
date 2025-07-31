@@ -47,6 +47,7 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   const originalPositions = useRef<Float32Array | null>(null);
   const { val: dialogBumpStrength } = useSpring({ val: 0 });
   const { val: tileBumpStrength } = useSpring({ val: 0 });
+  const { val: centerTileBumpStrength } = useSpring({ val: 0 });
   const { val: profileDialogBumpStrength } = useSpring({ val: 0 });
   const { val: segmentedControlBumpStrength } = useSpring({ val: 0 });
   const { val: meDialogBumpStrength } = useSpring({ val: 0 });
@@ -58,6 +59,10 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   useEffect(() => {
     tileBumpStrength.start(warpTileRect ? -0.8 : 0);
   }, [warpTileRect, tileBumpStrength]);
+
+  useEffect(() => {
+    centerTileBumpStrength.start(centerTileRect ? -0.8 : 0);
+  }, [centerTileRect, centerTileBumpStrength]);
 
   useEffect(() => {
     profileDialogBumpStrength.start(profileDialogRect ? dialogBumpConfig.dialogBumpStrength : 0);
@@ -181,11 +186,12 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
     const strength = bumpStrength.get();
     const animatedDialogStrength = dialogBumpStrength.get();
     const animatedTileStrength = tileBumpStrength.get();
+    const animatedCenterTileStrength = centerTileBumpStrength.get();
     const animatedProfileDialogStrength = profileDialogBumpStrength.get();
     const animatedSegmentedControlStrength = segmentedControlBumpStrength.get();
     const animatedMeDialogStrength = meDialogBumpStrength.get();
 
-    if (strength === 0 && !isPointerDown && animatedDialogStrength === 0 && animatedTileStrength === 0 && animatedProfileDialogStrength === 0 && animatedSegmentedControlStrength === 0 && animatedMeDialogStrength === 0 && !rippleRef.current?.active) {
+    if (strength === 0 && !isPointerDown && animatedDialogStrength === 0 && animatedTileStrength === 0 && animatedProfileDialogStrength === 0 && animatedSegmentedControlStrength === 0 && animatedMeDialogStrength === 0 && !rippleRef.current?.active && animatedCenterTileStrength === 0) {
       if (vertices.every((v, i) => v === originalPositions.current![i])) return;
 
       for (let i = 0; i < vertices.length; i++) {
@@ -287,7 +293,7 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
         zDisplacement += animatedMeDialogStrength * factor;
       }
 
-      if (centerTileRect && animatedTileStrength !== 0) {
+      if (centerTileRect && animatedCenterTileStrength !== 0) {
         const rectHalfWidth = centerTileRect.width / 2;
         const rectHalfHeight = centerTileRect.height / 2;
         const cornerRadius = centerTileRect.cornerRadius;
@@ -300,7 +306,7 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
 
         const edgeSoftness = 0.1;
         const factor = 1.0 - smoothstep(0, edgeSoftness, dist);
-        zDisplacement += animatedTileStrength * factor;
+        zDisplacement += animatedCenterTileStrength * factor;
       }
 
       if (segmentedControlRect && animatedSegmentedControlStrength !== 0) {
