@@ -57,9 +57,21 @@ const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({
       });
   }, []);
 
-  // Firestore Timestamps have a toDate() method
-  const date = warp.when.toDate();
-  const dateLabel = formatShortDate(date);
+  const formatWarpTime = (when: any) => {
+    const date = when?.toDate ? when.toDate() : new Date(when);
+    const now = new Date();
+    const isToday = date.getDate() === now.getDate() &&
+                  date.getMonth() === now.getMonth() &&
+                  date.getFullYear() === now.getFullYear();
+
+    if (isToday) {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    } else {
+      return formatShortDate(date);
+    }
+  };
+
+  const dateLabel = formatWarpTime(warp.when);
   const distanceLabel = userCoords ? formatDistance(userCoords, warp) : null;
 
   const tileContent = (
