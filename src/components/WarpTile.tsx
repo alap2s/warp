@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { getIcon } from './MakeWarpDialog';
 import { formatShortDate } from '@/lib/utils';
 import { formatDistance, getCurrentCoordinates } from '@/lib/location';
+import { Timestamp } from 'firebase/firestore';
 
 interface WarpTileProps {
   warp: Warp;
@@ -57,8 +58,8 @@ const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({
       });
   }, []);
 
-  const formatWarpTime = (when: any) => {
-    const date = when?.toDate ? when.toDate() : new Date(when);
+  const formatWarpTime = (when: Date | Timestamp) => {
+    const date = when instanceof Timestamp ? when.toDate() : new Date(when);
     const now = new Date();
     const isToday = date.getDate() === now.getDate() &&
                   date.getMonth() === now.getMonth() &&
