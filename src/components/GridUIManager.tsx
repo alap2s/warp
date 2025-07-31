@@ -18,11 +18,10 @@ import { markNotificationsAsRead } from '@/lib/warp';
 import type { Warp, UserProfile } from '@/lib/types';
 import { debounce } from 'lodash';
 
-const CreateWarpTile = ({ onClick, onSizeChange }: { onClick: () => void, onSizeChange?: (size: { width: number, height: number } | null) => void }) => {
-  const tileRef = React.useRef<HTMLDivElement>(null);
-
+const CreateWarpTile = React.forwardRef<HTMLDivElement, { onClick: () => void, onSizeChange?: (size: { width: number, height: number } | null) => void }>(({ onClick, onSizeChange }, ref) => {
   useLayoutEffect(() => {
-    if (onSizeChange && tileRef.current) {
+    const currentRef = ref && 'current' in ref ? ref.current : null;
+    if (onSizeChange && currentRef) {
       const observer = new ResizeObserver(entries => {
         const entry = entries[0];
         if (entry) {
@@ -30,14 +29,14 @@ const CreateWarpTile = ({ onClick, onSizeChange }: { onClick: () => void, onSize
           onSizeChange({ width, height });
         }
       });
-      observer.observe(tileRef.current);
+      observer.observe(currentRef);
       return () => observer.disconnect();
     }
-  }, [onSizeChange]);
+  }, [onSizeChange, ref]);
   
   return (
     <motion.div
-      ref={tileRef}
+      ref={ref}
       className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -54,7 +53,8 @@ const CreateWarpTile = ({ onClick, onSizeChange }: { onClick: () => void, onSize
       </div>
     </motion.div>
   )
-};
+});
+CreateWarpTile.displayName = 'CreateWarpTile';
 
 
 const GridUIManager = () => {
@@ -82,6 +82,7 @@ const GridUIManager = () => {
     warps,
     setCenterTileSize,
   } = useGridState();
+  const centerTileRef = React.useRef<HTMLDivElement>(null);
   const [isPreparingWarp, setIsPreparingWarp] = React.useState(false);
   const [participantProfiles, setParticipantProfiles] = React.useState<UserProfile[]>([]);
   const [isUpdatingAvatar, setUpdatingAvatar] = React.useState(false);
@@ -281,6 +282,7 @@ const GridUIManager = () => {
         {/* Render the active warp (from another user) in the center */}
         {activeWarp && !isOpenWarpDialogOpen && (
           <WarpTile
+            ref={centerTileRef}
             key={activeWarp.id}
             warp={activeWarp}
             username={activeWarp.user?.username || '...'}
@@ -297,6 +299,7 @@ const GridUIManager = () => {
       {!activeWarp && showTiles && (
         myWarp ? (
           <WarpTile
+            ref={centerTileRef}
             key={myWarp.id}
             warp={myWarp}
             username={profile?.username || ''}
@@ -307,7 +310,7 @@ const GridUIManager = () => {
             onSizeChange={setCenterTileSize}
           />
         ) : (
-          profile && <CreateWarpTile onClick={openMakeWarpDialog} onSizeChange={setCenterTileSize} />
+          profile && <CreateWarpTile ref={centerTileRef} onClick={openMakeWarpDialog} onSizeChange={setCenterTileSize} />
         )
       )}
 
