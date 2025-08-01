@@ -1,6 +1,8 @@
 import {onDocumentCreated, onDocumentUpdated} from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import {QueryDocumentSnapshot} from "firebase-admin/firestore";
+import {onSchedule} from "firebase-functions/v2/scheduler";
+import {RETENTION_PERIODS} from "./config";
 
 admin.initializeApp();
 
@@ -94,4 +96,39 @@ export const sendNotificationOnWarpJoin = onDocumentUpdated({
     }
   }
   return null; // No change in participants, so no notification
+});
+
+export const cleanupOldData = onSchedule({
+  schedule: "every 1 hours",
+  region: "europe-west3",
+}, async () => {
+  const now = admin.firestore.Timestamp.now();
+  const cutoff = new admin.firestore.Timestamp(
+    now.seconds - RETENTION_PERIODS.WARP * 60 * 60,
+    now.nanoseconds
+  );
+
+  const oldWarpsSnapshot = await db.collection("warps")
+    .where("when", "<", cutoff)
+    .get();
+
+  const batch = db.batch();
+  const warpIdsToDelete: string[] = [];
+
+  oldWarpsSnapshot.forEach((doc) => {
+    warpIdsToDelete.push(doc.id);
+    batch.delete(doc.ref);
+  });
+
+  if (warpIdsToDelete.length > 0) {
+    const notificationsSnapshot = await db.collection("notifications")
+      .where("warpId", "in", warpIdsToDelete)
+      .get();
+
+    notificationsSnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+  }
+
+  await batch.commit();
 });
