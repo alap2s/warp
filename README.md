@@ -2,7 +2,7 @@
 
 **1. Project Summary**
 
-"Warp" is a progressive web application built by Alap Shah. Inspired by Einstein's theory of relativity, it allows users to create their own "reality warp" in a shared digital space. Users can invite friends to join their warps, fostering a sense of shared, temporary realities. The application is designed to be a lightweight, experimental, and engaging social experience.
+"Warp" is a progressive web application built by [@alap](https://www.instagram.com/test_alap_final/). Inspired by Einstein's theory of relativity, it allows users to create their own "reality warp" in a shared digital space. Users can invite friends to join their warps, fostering a sense of shared, temporary realities. The application is designed to be a lightweight, experimental, and engaging social experience.
 
 **2. Core Technologies**
 
