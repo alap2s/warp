@@ -3,10 +3,11 @@
 import React from 'react';
 import { Warp } from '@/lib/types';
 import { motion } from 'framer-motion';
-import { getIcon } from './MakeWarpDialog';
 import { formatShortDate } from '@/lib/utils';
 import { formatDistance, getCurrentCoordinates } from '@/lib/location';
 import { Timestamp } from 'firebase/firestore';
+import DynamicIcon from './ui/DynamicIcon';
+import { getIconName } from '@/lib/icon-map';
 
 interface WarpTileProps {
   warp: Warp;
@@ -29,7 +30,7 @@ const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({
   joinerCount,
   participantCount,
 }, ref) => {
-  const Icon = getIcon(warp.icon);
+  const iconName = getIconName(warp.what);
   const [userCoords, setUserCoords] = React.useState<{ lat: number; lng: number } | null>(null);
 
   React.useLayoutEffect(() => {
@@ -103,7 +104,7 @@ const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({
         ) : null}
       </div>
       <div className="w-5 h-5 text-white">
-        {Icon && <Icon size={20} />}
+        <DynamicIcon name={iconName} size={20} />
       </div>
       <div className="flex flex-col items-center text-center">
         <p className="text-white text-xs font-medium truncate w-full">{username}</p>

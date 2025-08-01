@@ -13,6 +13,8 @@ import {
 import Dialog from './ui/Dialog';
 import DialogHeader from './ui/DialogHeader';
 import { getCurrentCoordinates, getAddressFromCoordinates, getCoordinatesFromAddress } from '@/lib/location';
+import { getIconName } from '@/lib/icon-map';
+import DynamicIcon from './ui/DynamicIcon';
 
 interface IconProps {
   className?: string;
@@ -175,7 +177,7 @@ export const MakeWarpDialog = ({
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [geocodingStatus, setGeocodingStatus] = useState<'success' | 'error' | null>(null);
   const [foundLocationName, setFoundLocationName] = useState<string | null>(null);
-  const [currentIconName, setCurrentIconName] = useState<string>(initialData?.icon || 'LineSquiggle');
+  const [currentIconName, setCurrentIconName] = useState<string>(initialData?.icon || 'line-squiggle');
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
@@ -193,7 +195,7 @@ export const MakeWarpDialog = ({
           setGeocodingStatus('success');
         })
         .catch(() => {
-          setWhereValue(''); // Clear on error
+            setWhereValue(''); // Clear on error
           setGeocodingStatus('error');
         })
         .finally(() => {
@@ -244,8 +246,7 @@ export const MakeWarpDialog = ({
   }, [whereValue]);
 
   useEffect(() => {
-    const iconComponent = getIcon(whatValue);
-    const iconName = Object.keys(iconMap).find(key => iconMap[key] === iconComponent) || 'LineSquiggle';
+    const iconName = getIconName(whatValue);
     setCurrentIconName(iconName);
   }, [whatValue]);
 
@@ -301,7 +302,6 @@ export const MakeWarpDialog = ({
     return date;
   });
 
-  const CurrentIcon = iconMap[currentIconName] || LineSquiggle;
 
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange}>
@@ -311,13 +311,13 @@ export const MakeWarpDialog = ({
             {isDeleting ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
             ) : (
-              <Trash2 size={16} strokeWidth={2.25} />
+            <Trash2 size={16} strokeWidth={2.25} />
             )}
           </IconButton>
         )}
-        <IconButton variant="outline" onClick={onClose}>
+          <IconButton variant="outline" onClick={onClose}>
             <X size={16} strokeWidth={2.25} />
-        </IconButton>
+          </IconButton>
         <IconButton variant="default" onClick={handlePost}>
           <Check size={16} strokeWidth={2.25} />
         </IconButton>
@@ -332,7 +332,7 @@ export const MakeWarpDialog = ({
             onChange={(e) => setWhatValue(e.target.value)}
             maxLength={60}
           />
-          <CurrentIcon className={`absolute left-3 top-1/2 -translate-y-1/2 ${whatValue ? 'text-white' : 'text-gray-400'}`} size={16} strokeWidth={2.25} />
+          <DynamicIcon name={currentIconName} className={`absolute left-3 top-1/2 -translate-y-1/2 ${whatValue ? 'text-white' : 'text-gray-400'}`} size={16} strokeWidth={2.25} />
         </div>
 
         <div className="relative">
