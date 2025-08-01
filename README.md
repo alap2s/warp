@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Project "Warp": A Technical Overview
 
-## Getting Started
+**1. Project Summary**
 
-First, run the development server:
+"Warp" is a progressive web application built by Alap Shah. Inspired by Einstein's theory of relativity, it allows users to create their own "reality warp" in a shared digital space. Users can invite friends to join their warps, fostering a sense of shared, temporary realities. The application is designed to be a lightweight, experimental, and engaging social experience.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**2. Core Technologies**
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+*   **Frontend**: Built with **Next.js 15** and **React 19**, providing a modern, performant, and server-rendered user interface.
+*   **Backend**: Powered by **Firebase**, which handles authentication, database, file storage, and serverless functions.
+*   **Database**: **Cloud Firestore** is used as the primary database for storing user profiles, warps, and notifications.
+*   **Styling**: **Tailwind CSS** is used for utility-first styling, enabling rapid and consistent UI development.
+*   **3D Graphics**: The application features an interactive 3D grid, rendered with **Three.js** and **React Three Fiber**.
+*   **Animations**: **Framer Motion** is used to create fluid and engaging animations throughout the application.
+*   **PWA**: The application is a fully-featured **Progressive Web App**, allowing it to be installed on a user's device and work offline.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**3. Key Features**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+*   **Anonymous Authentication**: Users are seamlessly onboarded with anonymous Firebase Authentication, removing the friction of a traditional sign-up process.
+*   **User Profiles**: After onboarding, users can create a profile with a unique username and an avatar.
+*   **The "Warp" Concept**: The central feature of the application. A "warp" is a user-created event or space that exists for a limited time.
+*   **Interactive 3D Grid**: The main user interface is a 3D grid where users can view and interact with warps.
+*   **Real-time Notifications**: Users receive real-time notifications when new warps are created or when someone joins their warp.
+*   **Deep Linking**: Users can share links to their warps, which will redirect new users to the warp after they've completed the onboarding process.
 
-## Learn More
+**4. Application Architecture**
 
-To learn more about Next.js, take a look at the following resources:
+*   **Frontend**: The Next.js application is structured with a clear separation of concerns:
+    *   `src/app`: Contains the main application routes and pages.
+    *   `src/components`: A library of reusable React components.
+    *   `src/context`: Manages global application state for authentication and the grid.
+    *   `src/lib`: Contains the core application logic, including Firebase interactions, hooks, and type definitions.
+*   **Backend (Firebase Cloud Functions)**: The backend logic is handled by a set of serverless Cloud Functions:
+    *   `sendNotificationOnWarpCreate`: Triggered when a new warp is created, and sends notifications to all other users.
+    *   `sendNotificationOnWarpJoin`: Triggered when a user joins a warp, and sends a notification to the warp's owner.
+    *   `cleanupOldData`: A scheduled function that runs hourly to enforce the data retention policy.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**5. Data Management and Policies**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+*   **Data Retention**: To keep the database lean and manage costs, the application implements a strict data retention policy:
+    *   **Warps**: Automatically deleted 24 hours after their scheduled time.
+    *   **Notifications**: Automatically deleted along with their associated warp.
+*   **Configuration**: The data retention periods are defined in a dedicated configuration file (`functions/src/config.ts`), making them easy to modify in the future.
