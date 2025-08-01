@@ -16,7 +16,8 @@ const DynamicIcon = ({ name, ...props }: DynamicIconProps) => {
       setIsLoading(true);
       try {
         const iconName = name.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
-        const { [iconName]: ImportedIcon } = await import('lucide-react');
+        const lucideIcons = await import('lucide-react');
+        const ImportedIcon = (lucideIcons as any)[iconName] as React.ComponentType<LucideProps>;
 
         if (ImportedIcon) {
           setIcon(() => ImportedIcon);
