@@ -5,6 +5,7 @@ import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
 import { precacheAndRoute } from 'workbox-precaching';
 
 declare const self: ServiceWorkerGlobalScope & {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   __WB_MANIFEST: any;
 };
 
