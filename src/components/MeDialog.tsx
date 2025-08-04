@@ -10,6 +10,8 @@ import DialogHeader from './ui/DialogHeader';
 import { deleteUserAccount } from '@/lib/user';
 import { UserProfile } from '@/lib/types';
 import { initializeFcm } from '@/lib/fcm';
+import { auth } from '@/lib/firebase';
+import { FieldValue } from 'firebase/firestore';
 
 const MeDialog = ({
   userProfile,
@@ -24,13 +26,14 @@ const MeDialog = ({
   onSizeChange?: (size: { width: number; height: number }) => void;
   onUpdateAvatar: () => void;
   onDeleteAccount: () => void;
-  onUpdateProfile: (data: { notificationsEnabled: boolean; fcmToken?: string }) => void;
+  onUpdateProfile: (data: { notificationsEnabled: boolean; fcmToken?: string | FieldValue }) => void;
 }) => {
-  const [notifications, setNotifications] = React.useState(userProfile.notificationsEnabled ?? false);
   const [permissionStatus, setPermissionStatus] = React.useState<NotificationPermission>('default');
 
   React.useEffect(() => {
-    setPermissionStatus(Notification.permission);
+    if ('Notification' in window) {
+      setPermissionStatus(Notification.permission);
+    }
   }, []);
 
   const handleDelete = async () => {
@@ -39,24 +42,24 @@ const MeDialog = ({
     window.location.reload();
   };
 
-  const handleNotificationChange = async (value: boolean) => {
-    if (value) {
-      if (permissionStatus === 'default') {
-        const permission = await Notification.requestPermission();
-        setPermissionStatus(permission);
-        if (permission === 'granted') {
-          setNotifications(true);
-          await initializeFcm();
-        }
-      } else if (permissionStatus === 'granted') {
-        setNotifications(true);
+  const handleNotificationChange = async (enabled: boolean) => {
+    if (enabled) {
+      const permission = await Notification.requestPermission();
+      setPermissionStatus(permission);
+      if (permission === 'granted') {
         await initializeFcm();
       }
     } else {
-      setNotifications(false);
-      onUpdateProfile({ notificationsEnabled: false, fcmToken: '' }); // Clear token
+        const user = auth.currentUser;
+        if (user) {
+            // This is handled via the onUpdateProfile in AuthContext now
+        }
     }
+    // Let AuthContext handle the profile update via the listener
+    onUpdateProfile({ notificationsEnabled: enabled });
   };
+
+  const isToggleOn = userProfile.notificationsEnabled && permissionStatus === 'granted';
 
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={true}>
@@ -64,7 +67,7 @@ const MeDialog = ({
         <DialogHeader title={[userProfile.username]}>
             <button onClick={onUpdateAvatar} className="overflow-hidden rounded-2xl w-12 h-12">
               <Image
-                src={`/Thumbs/${userProfile.icon}`}
+                src={userProfile.photoURL ? userProfile.photoURL : `/Thumbs/${userProfile.icon}`}
                 alt="Avatar"
                 width={48}
                 height={48}
@@ -76,7 +79,7 @@ const MeDialog = ({
         <hr className="border-white/20" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {notifications ? (
+            {isToggleOn ? (
               <Bell size={16} strokeWidth={2.25} className="text-white/80" />
             ) : (
               <BellOff size={16} strokeWidth={2.25} className="text-white/80" />
@@ -84,7 +87,7 @@ const MeDialog = ({
             <p className="text-white/80 font-medium">Notifications</p>
           </div>
           <NotificationToggle 
-            value={notifications && permissionStatus === 'granted'} 
+            value={isToggleOn} 
             onChange={handleNotificationChange}
             disabled={permissionStatus === 'denied'}
           />
