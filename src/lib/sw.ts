@@ -23,8 +23,18 @@ onBackgroundMessage(messaging, (payload) => {
   const notificationTitle = payload.notification?.title || 'New Message';
   const notificationOptions = {
     body: payload.notification?.body || 'You have a new message.',
-    icon: '/icon-192.png'
+    icon: '/icon-192.png',
+    data: {
+        url: payload.data?.url || '/'
+    }
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
-}); 
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    event.waitUntil(
+        self.clients.openWindow(event.notification.data.url)
+    );
+});

@@ -5,6 +5,7 @@ export interface UserProfile {
   icon: string;
   photoURL?: string;
   notificationsEnabled?: boolean;
+  fcmToken?: string;
 }
 
 export interface Warp {

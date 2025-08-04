@@ -74,6 +74,7 @@ export const updateUserProfile = async (
     icon?: string;
     photoURL?: string;
     notificationsEnabled?: boolean;
+    fcmToken?: string;
   }
 ) => {
   const userRef = doc(db, 'users', userId);
@@ -113,4 +114,4 @@ export const deleteUserAccount = async () => {
     console.error("Error deleting user account:", error);
     throw new Error('Failed to delete user account. This may require you to sign in again.');
   }
-}; 
+};

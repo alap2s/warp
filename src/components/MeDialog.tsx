@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-//import { IconButton } from './ui/IconButton';
 import { Button } from './ui/Button';
 import { Bell, BellOff, Trash2 } from 'lucide-react';
 import Dialog from './ui/Dialog';
@@ -10,6 +9,7 @@ import NotificationToggle from './ui/NotificationToggle';
 import DialogHeader from './ui/DialogHeader';
 import { deleteUserAccount } from '@/lib/user';
 import { UserProfile } from '@/lib/types';
+import { initializeFcm } from '@/lib/fcm';
 
 const MeDialog = ({
   userProfile,
@@ -24,7 +24,7 @@ const MeDialog = ({
   onSizeChange?: (size: { width: number; height: number }) => void;
   onUpdateAvatar: () => void;
   onDeleteAccount: () => void;
-  onUpdateProfile: (data: { notificationsEnabled: boolean }) => void;
+  onUpdateProfile: (data: { notificationsEnabled: boolean; fcmToken?: string }) => void;
 }) => {
   const [notifications, setNotifications] = React.useState(userProfile.notificationsEnabled ?? false);
   const [permissionStatus, setPermissionStatus] = React.useState<NotificationPermission>('default');
@@ -46,15 +46,15 @@ const MeDialog = ({
         setPermissionStatus(permission);
         if (permission === 'granted') {
           setNotifications(true);
-          onUpdateProfile({ notificationsEnabled: true });
+          await initializeFcm();
         }
       } else if (permissionStatus === 'granted') {
         setNotifications(true);
-        onUpdateProfile({ notificationsEnabled: true });
+        await initializeFcm();
       }
     } else {
       setNotifications(false);
-      onUpdateProfile({ notificationsEnabled: false });
+      onUpdateProfile({ notificationsEnabled: false, fcmToken: '' }); // Clear token
     }
   };
 
@@ -62,13 +62,14 @@ const MeDialog = ({
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={true}>
       <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
         <DialogHeader title={[userProfile.username]}>
-            <button onClick={onUpdateAvatar} className="overflow-hidden rounded-2xl">
+            <button onClick={onUpdateAvatar} className="overflow-hidden rounded-2xl w-12 h-12">
               <Image
                 src={`/Thumbs/${userProfile.icon}`}
                 alt="Avatar"
-                width={60}
-                height={60}
+                width={48}
+                height={48}
                 className="rounded-2xl"
+                style={{ objectFit: 'cover' }}
               />
             </button>
         </DialogHeader>
@@ -109,4 +110,4 @@ const MeDialog = ({
   );
 };
 
-export default MeDialog; 
+export default MeDialog;

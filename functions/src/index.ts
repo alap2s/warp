@@ -3,10 +3,55 @@ import * as admin from "firebase-admin";
 import {QueryDocumentSnapshot} from "firebase-admin/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {RETENTION_PERIODS} from "./config";
+import {getMessaging} from "firebase-admin/messaging";
 
 admin.initializeApp();
-
 const db = admin.firestore();
+const messaging = getMessaging();
+
+/**
+ * Sends a push notification to a user's device and handles stale tokens.
+ * @param {string} token The FCM registration token.
+ * @param {string} title The title of the notification.
+ * @param {string} body The body of the notification.
+ * @param {string} url The URL to open when the notification is clicked.
+ * @param {string} userId The ID of the user to clean up the token for if it's stale.
+ */
+const sendPushNotification = async (
+  token: string,
+  title: string,
+  body: string,
+  url: string,
+  userId: string
+) => {
+  try {
+    await messaging.send({
+      token,
+      notification: {title, body},
+      webpush: {
+        notification: {
+          icon: "/icon-192.png",
+        },
+        fcmOptions: {
+          link: url,
+        },
+      },
+      data: {
+        url,
+      },
+    });
+  } catch (error: any) {
+    // A "registration-token-not-registered" error indicates the token is stale.
+    if (error.code === "messaging/registration-token-not-registered") {
+      console.log(`Stale token found for user ${userId}. Removing it.`);
+      // Remove the stale token from the user's profile.
+      await db.collection("users").doc(userId).update({fcmToken: ""});
+    } else {
+      console.error("Error sending push notification:", error);
+    }
+  }
+};
+
 
 /**
  * Notifies all users (except the creator) when a new warp is created.
@@ -26,26 +71,22 @@ export const sendNotificationOnWarpCreate = onDocumentCreated({
 
   // Get all users except the owner
   const usersSnapshot = await db.collection("users").where("uid", "!=", ownerId).get();
-
-  const notifications: Promise<any>[] = [];
+  const ownerProfileDoc = await db.collection("users").doc(ownerId).get();
+  const ownerProfile = ownerProfileDoc.data();
 
   usersSnapshot.forEach((userDoc: QueryDocumentSnapshot) => {
     const user = userDoc.data();
-    // Send notification only if the user has them enabled
-    if (user.notificationsEnabled) {
-      const notification = {
-        userId: user.uid,
-        type: "new_warp",
-        warpId: warpId,
-        actorId: ownerId, // The actor is the person who created the warp
-        read: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      };
-      notifications.push(db.collection("notifications").add(notification));
+    if (user.notificationsEnabled && user.fcmToken) {
+      const warpUrl = `https://dots-rouge.vercel.app/warp/${warpId}`;
+      sendPushNotification(
+        user.fcmToken,
+        `New Warp by ${ownerProfile?.username || "a user"}!`,
+        newWarp.what,
+        warpUrl,
+        user.uid
+      );
     }
   });
-
-  await Promise.all(notifications);
 });
 
 /**
@@ -69,33 +110,30 @@ export const sendNotificationOnWarpJoin = onDocumentUpdated({
 
   // Check if the participants array has grown
   if (afterData.participants.length > beforeData.participants.length) {
-    // Find the new participant by comparing the before and after arrays
     const newParticipantId = afterData.participants.find(
       (p: string) => !beforeData.participants.includes(p),
     );
 
     if (newParticipantId) {
       const ownerId = afterData.ownerId;
-
-      // Get the owner's profile to check if they have notifications enabled
       const ownerProfileDoc = await db.collection("users").doc(ownerId).get();
       const ownerProfile = ownerProfileDoc.data();
+      const joinerProfileDoc = await db.collection("users").doc(newParticipantId).get();
+      const joinerProfile = joinerProfileDoc.data();
 
-      if (ownerProfile && ownerProfile.notificationsEnabled) {
-        const notification = {
-          userId: ownerId, // The notification is for the warp owner
-          type: "warp_join",
-          warpId: warpId,
-          actorId: newParticipantId, // The actor is the person who joined
-          read: false,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        };
-
-        return db.collection("notifications").add(notification);
+      if (ownerProfile && ownerProfile.notificationsEnabled && ownerProfile.fcmToken) {
+        const warpUrl = `https://dots-rouge.vercel.app/warp/${warpId}`;
+        sendPushNotification(
+          ownerProfile.fcmToken,
+          `New Joiner!`,
+          `${joinerProfile?.username || "Someone"} joined your warp: ${afterData.what}`,
+          warpUrl,
+          ownerId,
+        );
       }
     }
   }
-  return null; // No change in participants, so no notification
+  return null;
 });
 
 export const cleanupOldData = onSchedule({
