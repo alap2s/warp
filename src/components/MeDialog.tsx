@@ -10,8 +10,8 @@ import DialogHeader from './ui/DialogHeader';
 import { deleteUserAccount } from '@/lib/user';
 import { UserProfile } from '@/lib/types';
 import { initializeFcm } from '@/lib/fcm';
-import { auth } from '@/lib/firebase';
-import { FieldValue } from 'firebase/firestore';
+import { useAuth } from '@/context/AuthContext';
+import { deleteField } from 'firebase/firestore';
 
 const MeDialog = ({
   userProfile,
@@ -19,15 +19,14 @@ const MeDialog = ({
   onSizeChange,
   onUpdateAvatar,
   onDeleteAccount,
-  onUpdateProfile,
 }: {
   userProfile: UserProfile;
   onClose: () => void;
   onSizeChange?: (size: { width: number; height: number }) => void;
   onUpdateAvatar: () => void;
   onDeleteAccount: () => void;
-  onUpdateProfile: (data: { notificationsEnabled: boolean; fcmToken?: string | FieldValue }) => void;
 }) => {
+  const { updateProfile } = useAuth();
   const [permissionStatus, setPermissionStatus] = React.useState<NotificationPermission>('default');
 
   React.useEffect(() => {
@@ -47,16 +46,16 @@ const MeDialog = ({
       const permission = await Notification.requestPermission();
       setPermissionStatus(permission);
       if (permission === 'granted') {
+        // initializeFcm will call updateProfile with the token
         await initializeFcm();
+      } else {
+        // User denied permission, so we ensure notifications are disabled in our state
+        await updateProfile({ notificationsEnabled: false });
       }
     } else {
-        const user = auth.currentUser;
-        if (user) {
-            // This is handled via the onUpdateProfile in AuthContext now
-        }
+      // User is disabling notifications
+      await updateProfile({ notificationsEnabled: false, fcmToken: deleteField() });
     }
-    // Let AuthContext handle the profile update via the listener
-    onUpdateProfile({ notificationsEnabled: enabled });
   };
 
   const isToggleOn = userProfile.notificationsEnabled && permissionStatus === 'granted';

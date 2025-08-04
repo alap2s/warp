@@ -3,14 +3,16 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
-import { getUserProfile } from '@/lib/user';
+import { getUserProfile, updateUserProfile } from '@/lib/user';
 import { UserProfile } from '@/lib/types';
+import { FieldValue } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
   refreshProfile: () => Promise<void>;
+  updateProfile: (data: Partial<UserProfile> | { fcmToken?: string | FieldValue }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   refreshProfile: async () => {},
+  updateProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -33,6 +36,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setProfile(userProfile as UserProfile);
     }
   }, []);
+
+  const updateProfile = async (data: Partial<UserProfile> | { fcmToken?: string | FieldValue }) => {
+    if (auth.currentUser) {
+      await updateUserProfile(auth.currentUser.uid, data);
+      await refreshProfile();
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -54,7 +64,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     profile,
     loading,
     refreshProfile,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
-}; 
+};
