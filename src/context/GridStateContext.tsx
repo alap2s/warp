@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { FormData } from '@/components/MakeWarpDialog';
 
 import { Warp } from '@/lib/types';
+import { playCreateWarp, playDeleteWarp, playDialogSound } from '@/lib/audio';
 type DialogSize = { width: number, height: number } | null;
 
 interface GridStateContextType {
@@ -71,22 +72,29 @@ export const GridStateProvider = ({
   const openMakeWarpDialog = () => {
     setWarpToEdit(null);
     setMakeWarpDialogOpen(true);
+    playDialogSound('open');
   };
 
   const closeMakeWarpDialog = () => {
     setMakeWarpDialogOpen(false);
     if (warpToEdit) {
       setActiveWarp(warpToEdit);
+    } else {
+        playDialogSound('close');
     }
     setWarpToEdit(null);
     setDialogSize(null);
   };
 
   const openWarpDialog = () => {
+    playDialogSound('open');
     setOpenWarpDialogOpen(true);
   };
 
-  const closeWarpDialog = () => {
+  const closeWarpDialog = (isTransitioning = false) => {
+    if (!isTransitioning) {
+        playDialogSound('close');
+    }
     setOpenWarpDialogOpen(false);
     setActiveWarp(null);
     setDialogSize(null);
@@ -95,6 +103,7 @@ export const GridStateProvider = ({
   const postWarp = async (data: FormData) => {
     const newWarp = { ...data };
     await createWarp(newWarp);
+    playCreateWarp();
     setMakeWarpDialogOpen(false);
     setDialogSize(null);
   };
@@ -110,13 +119,14 @@ export const GridStateProvider = ({
   const startEditWarp = (warp: Warp) => {
     setWarpToEdit(warp);
     setActiveWarp(null);
-    closeWarpDialog();
+    closeWarpDialog(true);
     setMakeWarpDialogOpen(true);
   };
 
   const deleteWarp = async () => {
     if (warpToEdit) {
       await removeWarp(warpToEdit.id);
+      playDeleteWarp();
       setActiveWarp(null);
       setMakeWarpDialogOpen(false);
       setWarpToEdit(null);
@@ -156,4 +166,4 @@ export const GridStateProvider = ({
       {children}
     </GridStateContext.Provider>
   );
-}; 
+};

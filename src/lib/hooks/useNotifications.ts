@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Notification } from '@/lib/notifications';
+import { Notification } from '@/lib/types';
+import { playNotification } from '@/lib/audio';
 
 export const useNotifications = (userId: string | null) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const prevNotificationCountRef = useRef(0);
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     if (!userId) {
@@ -29,6 +32,14 @@ export const useNotifications = (userId: string | null) => {
         querySnapshot.forEach((doc) => {
           userNotifications.push({ id: doc.id, ...doc.data() } as Notification);
         });
+
+        if (!isInitialLoad.current && userNotifications.length > prevNotificationCountRef.current) {
+            playNotification();
+        }
+        
+        prevNotificationCountRef.current = userNotifications.length;
+        isInitialLoad.current = false;
+
         setNotifications(userNotifications);
         setLoading(false);
       },
@@ -39,8 +50,11 @@ export const useNotifications = (userId: string | null) => {
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+        isInitialLoad.current = true;
+        unsubscribe();
+    }
   }, [userId]);
 
   return { notifications, loading, error };
-}; 
+};
