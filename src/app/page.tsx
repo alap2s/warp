@@ -9,12 +9,12 @@ import { useSearchParams } from 'next/navigation';
 import { GridStateProvider, useGridState } from '@/context/GridStateContext';
 import { useWarps } from '@/lib/hooks/useWarps';
 import { createUserProfile, updateUserProfile, getUsersByIds } from '@/lib/user';
-import { getWarp } from '@/lib/warp';
 import { signInAnonymously } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import GridUIManager from '@/components/GridUIManager';
 import { playDialogSound } from '@/lib/audio';
 import { Warp } from '@/lib/types';
+import { getWarp } from '@/lib/warp';
 
 const GridCanvas = dynamic(() => import('@/components/InteractiveGrid'), {
   ssr: false,
@@ -83,20 +83,14 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
 const AppContent = () => {
   const { user, profile, loading, refreshProfile } = useAuth();
   const searchParams = useSearchParams();
-  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   const [sharedWarp, setSharedWarp] = useState<Warp | null>(null);
   const [hasHandledRedirect, setHasHandledRedirect] = useState(false);
 
-
   useEffect(() => {
-    const handlePostOnboarding = async () => {
-      if (onboardingCompleted && !loading && profile && !hasHandledRedirect) {
+    const handleInitialWarp = async () => {
+      if (profile && !hasHandledRedirect) {
         const redirectTo = searchParams.get('redirectTo');
         if (redirectTo) {
-          setHasHandledRedirect(true);
-          // Clean the URL to prevent re-triggering
-          window.history.replaceState({}, '', window.location.pathname);
-          
           const warpId = redirectTo.split('/').pop();
           if (warpId) {
             const warpData = await getWarp(warpId);
@@ -106,15 +100,16 @@ const AppContent = () => {
               setSharedWarp(warpWithUser as Warp);
             }
           }
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
         }
+        setHasHandledRedirect(true);
       }
     };
-
-    handlePostOnboarding();
-  }, [onboardingCompleted, loading, profile, searchParams, hasHandledRedirect]);
+    handleInitialWarp();
+  }, [profile, searchParams, hasHandledRedirect]);
 
   const handleOnboardingComplete = () => {
-    setOnboardingCompleted(true);
     if (Notification.permission === 'default') {
       setTimeout(async () => {
         const permission = await Notification.requestPermission();
