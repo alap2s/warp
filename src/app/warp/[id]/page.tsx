@@ -1,41 +1,56 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import GridCanvas from '@/components/InteractiveGrid';
-import { useGridState, GridStateProvider } from '@/context/GridStateContext';
+import { GridStateProvider } from '@/context/GridStateContext';
 import { getWarp } from '@/lib/warp';
 import { getUsersByIds } from '@/lib/user';
 import { Warp } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { useWarps } from '@/lib/hooks/useWarps';
+import GridUIManager from '@/components/GridUIManager';
 
 const WarpLoader = () => {
   const { id } = useParams<{ id: string }>();
-  const { setActiveWarp, openWarpDialog } = useGridState();
-  const { user, loading: authLoading } = useAuth();
-  const [warpLoaded, setWarpLoaded] = useState(false);
+  const router = useRouter();
+  const { profile, loading } = useAuth();
+  const [warp, setWarp] = useState<Warp | null>(null);
+  const [warpExists, setWarpExists] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (authLoading || warpLoaded) return;
+    if (loading) return; // Wait for auth to resolve
 
-    const fetchAndSetWarp = async () => {
+    const fetchWarp = async () => {
       const warpData = await getWarp(id);
       if (warpData) {
-        // We need to fetch the owner's profile to display it correctly
         const users = await getUsersByIds([warpData.ownerId]);
         const warpWithUser = { ...warpData, user: users[warpData.ownerId] };
-        
-        setActiveWarp(warpWithUser as Warp);
-        openWarpDialog();
-        setWarpLoaded(true);
+        setWarp(warpWithUser as Warp);
+        setWarpExists(true);
+      } else {
+        setWarpExists(false);
       }
     };
-    fetchAndSetWarp();
-  }, [id, setActiveWarp, openWarpDialog, user, authLoading, warpLoaded]);
+    fetchWarp();
+  }, [id, loading]);
 
-  return null;
+  useEffect(() => {
+    if (warpExists === false) {
+      router.push('/');
+    }
+  }, [warpExists, router]);
+
+  // If we're still determining if the warp exists, or if auth is loading, or if the warp is being fetched, show a blank screen.
+  if (warpExists === null || loading || !warp) {
+    return <div className="w-screen h-screen bg-black" />;
+  }
+  
+  // Pass the loaded warp to the UI manager and let it handle the logic
+  // If there's no profile, it's a preview.
+  return <GridUIManager sharedWarp={warp} isPreview={!profile} />;
 };
+
 
 const SharedWarpApp = () => {
   const { warps, saving, createWarp, updateWarp, deleteWarp } = useWarps();
@@ -57,8 +72,10 @@ const SharedWarpApp = () => {
 
 const SharedWarpPage = () => {
   return (
-    <SharedWarpApp />
+    <Suspense fallback={<div className="w-screen h-screen bg-black" />}>
+        <SharedWarpApp />
+    </Suspense>
   );
 };
 
-export default SharedWarpPage; 
+export default SharedWarpPage;

@@ -18,6 +18,7 @@ import { markNotificationsAsRead } from '@/lib/warp';
 import type { Warp, UserProfile } from '@/lib/types';
 import { debounce } from 'lodash';
 import { playDialogSound } from '@/lib/audio';
+import { useRouter } from 'next/navigation';
 
 const CreateWarpTile = React.forwardRef<HTMLDivElement, { onClick: () => void, onSizeChange?: (size: { width: number, height: number } | null) => void }>(({ onClick, onSizeChange }, ref) => {
   useLayoutEffect(() => {
@@ -41,7 +42,6 @@ const CreateWarpTile = React.forwardRef<HTMLDivElement, { onClick: () => void, o
       className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
       transition={{ type: 'spring', damping: 15, stiffness: 200 }}
     >
       <div
@@ -57,9 +57,14 @@ const CreateWarpTile = React.forwardRef<HTMLDivElement, { onClick: () => void, o
 });
 CreateWarpTile.displayName = 'CreateWarpTile';
 
+interface GridUIManagerProps {
+    sharedWarp?: Warp;
+    isPreview?: boolean;
+}
 
-const GridUIManager = () => {
+const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) => {
   const { user, profile, refreshProfile } = useAuth();
+  const router = useRouter();
   const { notifications } = useNotifications(user?.uid || null);
   const { 
     isMakeWarpDialogOpen, 
@@ -90,6 +95,13 @@ const GridUIManager = () => {
   const [segmentedControlSelection, setSegmentedControlSelection] = React.useState('Everyone');
   const [warpPositions, setWarpPositions] = React.useState<{ [key: string]: { x: number, y: number } }>({});
   const [screenSize, setScreenSize] = React.useState({ width: 0, height: 0 });
+
+  React.useEffect(() => {
+    if (sharedWarp && !isPreview) {
+      setActiveWarp(sharedWarp);
+      openWarpDialog();
+    }
+  }, [sharedWarp, isPreview, setActiveWarp, openWarpDialog]);
 
   React.useEffect(() => {
     const debouncedUpdate = debounce(() => {
@@ -191,15 +203,16 @@ const GridUIManager = () => {
 
   React.useEffect(() => {
     if (activeWarp) {
-
       const updatedWarp = warps.find(warp => warp.id === activeWarp.id);
       if (updatedWarp) {
-        setActiveWarp(updatedWarp);
+        if(JSON.stringify(updatedWarp) !== JSON.stringify(activeWarp)) {
+          setActiveWarp(updatedWarp);
+        }
       }
     }
   }, [warps, activeWarp, setActiveWarp]);
 
-  const isAnyDialogOpen = isMakeWarpDialogOpen || !profile || isOpenWarpDialogOpen || isUpdatingAvatar;
+  const isAnyDialogueOpen = isMakeWarpDialogOpen || isOpenWarpDialogOpen || !!meDialogSize || isUpdatingAvatar;
 
   const handleAvatarSave = async (newIcon: string) => {
     if (user) {
@@ -240,13 +253,29 @@ const GridUIManager = () => {
   
   const myWarp = user && warps ? warps.find(warp => warp.ownerId === user.uid) : null;
   const otherWarps = user && profile && warps ? warps.filter(warp => warp.ownerId !== user.uid) : [];
-  const showTiles = !isMakeWarpDialogOpen && !isOpenWarpDialogOpen && !meDialogSize && !isUpdatingAvatar;
+  const showTiles = !isAnyDialogueOpen && !isPreview;
+
+  if (isPreview) {
+    if (!sharedWarp) {
+        return <LoadingDialog />; // Or some other placeholder
+    }
+    return (
+        <OpenWarpDialog
+            warp={sharedWarp}
+            participantProfiles={[]}
+            onClose={() => router.push('/')} // Redirect to home to start onboarding
+            onEdit={() => {}} // No-op for preview
+            isPreview={true}
+            onSizeChange={setDialogSize}
+        />
+    );
+}
 
   return (
     <div className="absolute inset-0 grid-ui-manager" onClick={handleGridClick}>
       <AnimatePresence>
         {isLoading && <LoadingDialog />}
-        {isMakeWarpDialogOpen && (
+        {profile && isMakeWarpDialogOpen && (
           <MakeWarpDialog
             key={warpToEdit ? 'edit' : 'new'}
             initialData={warpToEditWithDate}
@@ -257,7 +286,7 @@ const GridUIManager = () => {
             onSizeChange={setDialogSize}
           />
         )}
-        {isOpenWarpDialogOpen && activeWarp && (
+        {profile && isOpenWarpDialogOpen && activeWarp && (
 
           isPreparingWarp ? (
             <LoadingDialog />
@@ -281,7 +310,7 @@ const GridUIManager = () => {
       
       <AnimatePresence>
         {/* Render the active warp (from another user) in the center */}
-        {activeWarp && !isOpenWarpDialogOpen && (
+        {profile && activeWarp && !isOpenWarpDialogOpen && (
           <WarpTile
             ref={centerTileRef}
             key={activeWarp.id}
@@ -375,7 +404,7 @@ const GridUIManager = () => {
         />
       )}
       <AnimatePresence>
-        {!isAnyDialogOpen && profile && (
+        {profile && !isAnyDialogueOpen && (
           <motion.div
             className="absolute bottom-[20px] left-1/2 -translate-x-1/2 z-50"
             initial={{ opacity: 0, y: 20 }}
