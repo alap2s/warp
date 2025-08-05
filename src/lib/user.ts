@@ -3,7 +3,6 @@ import {
   setDoc,
   getDoc,
   updateDoc,
-  deleteDoc,
   collection,
   query,
   where,
@@ -11,7 +10,6 @@ import {
   limit,
 } from 'firebase/firestore';
 import { auth, db } from "./firebase";
-import { getWarpsByOwner, deleteWarp } from "./warp";
 import { deleteUser as deleteFirebaseUser } from "firebase/auth";
 import { UserProfile } from "./types";
 
@@ -80,15 +78,6 @@ export const updateUserProfile = async (
   await updateDoc(userRef, data);
 };
 
-export const deleteUserProfile = async (uid: string) => {
-  try {
-    await deleteDoc(doc(db, "users", uid));
-  } catch (error) {
-    console.error("Error deleting user profile:", error);
-    throw new Error('Failed to delete user profile. Please try again.');
-  }
-};
-
 export const deleteUserAccount = async () => {
   const user = auth.currentUser;
   if (!user) {
@@ -96,21 +85,12 @@ export const deleteUserAccount = async () => {
   }
 
   try {
-    // 1. Delete all warps owned by the user
-    const userWarps = await getWarpsByOwner(user.uid);
-    for (const warp of userWarps) {
-      await deleteWarp(warp.id);
-    }
-
-    // 2. Delete the user's profile document
-    await deleteUserProfile(user.uid);
-
-    // 3. Delete the user from Firebase Authentication
+    // Deleting the user from Firebase Authentication will trigger
+    // the onUserDelete cloud function to clean up all their data.
     await deleteFirebaseUser(user);
-
-    console.log("User account deleted successfully.");
+    console.log("User account deleted successfully. Backend cleanup initiated.");
   } catch (error) {
     console.error("Error deleting user account:", error);
     throw new Error('Failed to delete user account. This may require you to sign in again.');
   }
-}; 
+};
