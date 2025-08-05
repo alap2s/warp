@@ -21,3 +21,13 @@ export interface Warp {
     lng: number;
   };
 }
+
+export interface Notification {
+  id: string;
+  userId: string;
+  message: string;
+  read: boolean;
+  createdAt: Timestamp;
+  warpId?: string;
+  type?: 'new_warp' | 'warp_join';
+}
