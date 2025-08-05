@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import GridCanvas from '@/components/InteractiveGrid';
 import { useGridState, GridStateProvider } from '@/context/GridStateContext';
 import { getWarp } from '@/lib/warp';
@@ -9,32 +9,32 @@ import { getUsersByIds } from '@/lib/user';
 import { Warp } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { useWarps } from '@/lib/hooks/useWarps';
+import GridUIManager from '@/components/GridUIManager';
 
 const WarpLoader = () => {
   const { id } = useParams<{ id: string }>();
   const { setActiveWarp, openWarpDialog } = useGridState();
-  const { user, loading: authLoading } = useAuth();
-  const [warpLoaded, setWarpLoaded] = useState(false);
+  const { profile, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    if (authLoading || warpLoaded) return;
-
-    const fetchAndSetWarp = async () => {
+    const fetchAndDisplayWarp = async () => {
       const warpData = await getWarp(id);
       if (warpData) {
-        // We need to fetch the owner's profile to display it correctly
         const users = await getUsersByIds([warpData.ownerId]);
         const warpWithUser = { ...warpData, user: users[warpData.ownerId] };
         
         setActiveWarp(warpWithUser as Warp);
         openWarpDialog();
-        setWarpLoaded(true);
       }
     };
-    fetchAndSetWarp();
-  }, [id, setActiveWarp, openWarpDialog, user, authLoading, warpLoaded]);
 
-  return null;
+    if (!authLoading) {
+        fetchAndDisplayWarp();
+    }
+  }, [id, setActiveWarp, openWarpDialog, authLoading, profile, router]);
+
+  return <GridUIManager />;
 };
 
 const SharedWarpApp = () => {
@@ -52,13 +52,14 @@ const SharedWarpApp = () => {
       <WarpLoader />
     </GridStateProvider>
   );
-  }
-
+}
 
 const SharedWarpPage = () => {
   return (
-    <SharedWarpApp />
+    <Suspense fallback={<div className="w-screen h-screen bg-black" />}>
+      <SharedWarpApp />
+    </Suspense>
   );
 };
 
-export default SharedWarpPage; 
+export default SharedWarpPage;

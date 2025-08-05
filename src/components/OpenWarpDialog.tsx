@@ -12,6 +12,7 @@ import { joinWarp, leaveWarp } from '@/lib/warp';
 import { usePrevious } from '@/lib/utils';
 import { IconButton } from './ui/IconButton';
 import { playJoinWarp, playUnjoinWarp } from '@/lib/audio';
+import { useRouter } from 'next/navigation';
 
 interface OpenWarpDialogProps {
   warp: Warp;
@@ -19,15 +20,16 @@ interface OpenWarpDialogProps {
   onClose: () => void;
   onSizeChange?: (size: { width: number; height: number }) => void;
   onEdit: () => void;
+  isPreview?: boolean;
 }
 
-const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEdit }: OpenWarpDialogProps) => {
+const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEdit, isPreview = false }: OpenWarpDialogProps) => {
   const { user: currentUser } = useAuth();
   const [isJoined, setIsJoined] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  //const participants = warp.participants || [];
   const participants = React.useMemo(() => warp.participants || [], [warp.participants]);
   const prevParticipants = usePrevious(participants);
+  const router = useRouter();
 
   useEffect(() => {
     if (currentUser && participants) {
@@ -43,9 +45,13 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
 
   if (!warp) return null;
 
+  const handleRedirectToOnboarding = () => {
+    router.push(`/?redirectTo=/warp/${warp.id}`);
+  };
+
   const handleJoin = async () => {
     if (!currentUser) {
-      window.location.href = `/?redirectTo=/warp/${warp.id}`;
+      handleRedirectToOnboarding();
       return;
     }
     if (participants.length < 20) {
@@ -101,15 +107,22 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
     }
   };
 
+  const handleClose = isPreview ? handleRedirectToOnboarding : onClose;
+
   const { what, when, where } = warp;
   const date = when.toDate();
   
   return (
-    <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={true}>
+    <Dialog onClose={handleClose} onSizeChange={onSizeChange} isModal={true}>
       <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
       
         <DialogHeader title={warp.user?.username || '...'}>
-          {currentUser?.uid === warp.ownerId ? (
+          {isPreview ? (
+            <Button variant="primary" onClick={handleJoin}>
+              <Merge size={16} className="mr-2" />
+              Join
+            </Button>
+          ) : currentUser?.uid === warp.ownerId ? (
             <div className="flex gap-2">
               <IconButton variant="outline" onClick={onEdit}><Edit size={16} /></IconButton>
               <IconButton variant="outline" onClick={handleShare}><Share size={16} /></IconButton>

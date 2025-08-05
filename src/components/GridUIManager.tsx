@@ -177,9 +177,11 @@ const GridUIManager = () => {
         const profiles = activeWarp.participants?.length > 0 ? await getUsersByIds(activeWarp.participants) : {};
         setParticipantProfiles(Object.values(profiles) as UserProfile[]);
         
-        const relevantNotifications = notifications.filter(n => n.warpId === activeWarp.id);
-        if (relevantNotifications.length > 0 && user) {
-          markNotificationsAsRead(user!.uid, relevantNotifications.map(n => n.id));
+        if (user) {
+            const relevantNotifications = notifications.filter(n => n.warpId === activeWarp.id);
+            if (relevantNotifications.length > 0) {
+              markNotificationsAsRead(user!.uid, relevantNotifications.map(n => n.id));
+            }
         }
         
         setIsPreparingWarp(false);
@@ -274,6 +276,7 @@ const GridUIManager = () => {
                 closeWarpDialog();
                 startEditWarp(activeWarp)
               }}
+              isPreview={!profile}
             />
           )
         )}
