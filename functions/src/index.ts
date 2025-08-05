@@ -3,6 +3,7 @@ import * as admin from "firebase-admin";
 import {QueryDocumentSnapshot} from "firebase-admin/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import {RETENTION_PERIODS} from "./config";
+import * as functions from "firebase-functions";
 
 admin.initializeApp();
 
@@ -131,4 +132,53 @@ export const cleanupOldData = onSchedule({
   }
 
   await batch.commit();
+});
+
+export const onUserDelete = functions.region("europe-west3").auth.user().onDelete(async (user) => {
+  const userId = user.uid;
+  const batch = db.batch();
+
+  // 1. Remove the user from any warps they've joined
+  const warpsJoinedSnapshot = await db.collection("warps")
+    .where("participants", "array-contains", userId)
+    .get();
+
+  warpsJoinedSnapshot.forEach((doc) => {
+    batch.update(doc.ref, {
+      participants: admin.firestore.FieldValue.arrayRemove(userId),
+    });
+  });
+
+  // 2. Delete any warps owned by the user
+  const warpsOwnedSnapshot = await db.collection("warps")
+    .where("ownerId", "==", userId)
+    .get();
+
+  warpsOwnedSnapshot.forEach((doc) => {
+    batch.delete(doc.ref);
+  });
+
+  // 3. Delete notifications sent TO the user
+  const notificationsForUserSnapshot = await db.collection("notifications")
+    .where("userId", "==", userId)
+    .get();
+  
+  notificationsForUserSnapshot.forEach((doc) => {
+    batch.delete(doc.ref);
+  });
+
+  // 4. Delete notifications created BY the user
+  const notificationsByUserSnapshot = await db.collection("notifications")
+    .where("actorId", "==", userId)
+    .get();
+
+  notificationsByUserSnapshot.forEach((doc) => {
+    batch.delete(doc.ref);
+  });
+
+  // 5. Delete the user's profile
+  const userProfileRef = db.collection("users").doc(userId);
+  batch.delete(userProfileRef);
+
+  return batch.commit();
 });
