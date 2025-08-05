@@ -12,6 +12,7 @@ import { createUserProfile, updateUserProfile } from '@/lib/user';
 import { signInAnonymously } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import GridUIManager from '@/components/GridUIManager';
+import { playDialogSound } from '@/lib/audio';
 
 const GridCanvas = dynamic(() => import('@/components/InteractiveGrid'), {
   ssr: false,
@@ -32,7 +33,10 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
     signIn();
   }, []);
   
-  const handleNext = () => setStep('profile');
+  const handleNext = () => {
+    playDialogSound('open');
+    setStep('profile');
+  }
   
   const handleProfileSave = async (data: { username: string, icon: string }) => {
     if (user) {
@@ -43,6 +47,11 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
       setDialogSize(null);
     }
   };
+
+  const handleProfileClose = () => {
+    playDialogSound('close');
+    setStep('welcome');
+  }
 
   if (loading || step === 'done') return null;
 
@@ -60,7 +69,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
     return (
       <ProfileDialog
         onSave={handleProfileSave}
-        onClose={() => setStep('welcome')}
+        onClose={handleProfileClose}
         onSizeChange={setDialogSize}
       />
     );

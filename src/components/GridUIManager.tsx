@@ -17,6 +17,7 @@ import { getUsersByIds, updateUserProfile } from '@/lib/user';
 import { markNotificationsAsRead } from '@/lib/warp';
 import type { Warp, UserProfile } from '@/lib/types';
 import { debounce } from 'lodash';
+import { playDialogSound } from '@/lib/audio';
 
 const CreateWarpTile = React.forwardRef<HTMLDivElement, { onClick: () => void, onSizeChange?: (size: { width: number, height: number } | null) => void }>(({ onClick, onSizeChange }, ref) => {
   useLayoutEffect(() => {
@@ -348,6 +349,7 @@ const GridUIManager = () => {
               onClose={() => {
                 setMeDialogSize(null)
                 setSegmentedControlSelection('Friends');
+                playDialogSound('close');
               }}
               onSizeChange={setMeDialogSize}
               onUpdateAvatar={() => {
@@ -387,6 +389,7 @@ const GridUIManager = () => {
               onSelect={(option) => {
                 setSegmentedControlSelection(option);
                 if (option === 'Me') {
+                  playDialogSound('open');
                   setMeDialogSize({ width: 300, height: 557 });
                 } else {
                   setMeDialogSize(null);
