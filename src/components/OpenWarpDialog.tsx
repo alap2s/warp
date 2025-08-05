@@ -11,6 +11,7 @@ import { Merge, Edit, Share, SquareArrowOutUpRight } from 'lucide-react';
 import { joinWarp, leaveWarp } from '@/lib/warp';
 import { usePrevious } from '@/lib/utils';
 import { IconButton } from './ui/IconButton';
+import { playJoinWarp, playUnjoinWarp } from '@/lib/audio';
 
 interface OpenWarpDialogProps {
   warp: Warp;
@@ -51,6 +52,7 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
       setIsUpdating(true);
       try {
         await joinWarp(warp.id, currentUser.uid);
+        playJoinWarp();
       } catch (error) {
         console.error("Failed to join warp:", error);
         setIsUpdating(false);
@@ -63,6 +65,7 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
       setIsUpdating(true);
       try {
         await leaveWarp(warp.id, currentUser.uid);
+        playUnjoinWarp();
       } catch (error) {
         console.error("Failed to leave warp:", error);
         setIsUpdating(false);
@@ -168,4 +171,4 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
   );
 };
 
-export default OpenWarpDialog; 
+export default OpenWarpDialog;

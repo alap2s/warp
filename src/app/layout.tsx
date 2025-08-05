@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Anonymous_Pro } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { AppInitializer } from "@/components/AppInitializer";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -50,7 +51,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${anonymousPro.variable}`}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+            <AppInitializer>
+                {children}
+            </AppInitializer>
+        </AuthProvider>
       </body>
     </html>
   );
