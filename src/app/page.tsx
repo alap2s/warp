@@ -8,11 +8,13 @@ import ProfileDialog from '@/components/ProfileDialog';
 import { useSearchParams } from 'next/navigation';
 import { GridStateProvider, useGridState } from '@/context/GridStateContext';
 import { useWarps } from '@/lib/hooks/useWarps';
-import { createUserProfile, updateUserProfile } from '@/lib/user';
+import { createUserProfile, updateUserProfile, getUsersByIds } from '@/lib/user';
+import { getWarp } from '@/lib/warp';
 import { signInAnonymously } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import GridUIManager from '@/components/GridUIManager';
 import { playDialogSound } from '@/lib/audio';
+import { Warp } from '@/lib/types';
 
 const GridCanvas = dynamic(() => import('@/components/InteractiveGrid'), {
   ssr: false,
@@ -81,21 +83,38 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
 const AppContent = () => {
   const { user, profile, loading, refreshProfile } = useAuth();
   const searchParams = useSearchParams();
-  const [redirecting, setRedirecting] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+  const [sharedWarp, setSharedWarp] = useState<Warp | null>(null);
+  const [hasHandledRedirect, setHasHandledRedirect] = useState(false);
+
 
   useEffect(() => {
-    // This effect is for redirecting users who arrived from a shared link
-    // after they complete onboarding.
-    if (!loading && profile) {
-      const redirectTo = searchParams.get('redirectTo');
-      if (redirectTo) {
-        setRedirecting(true);
-        window.location.href = redirectTo;
+    const handlePostOnboarding = async () => {
+      if (onboardingCompleted && !loading && profile && !hasHandledRedirect) {
+        const redirectTo = searchParams.get('redirectTo');
+        if (redirectTo) {
+          setHasHandledRedirect(true);
+          // Clean the URL to prevent re-triggering
+          window.history.replaceState({}, '', window.location.pathname);
+          
+          const warpId = redirectTo.split('/').pop();
+          if (warpId) {
+            const warpData = await getWarp(warpId);
+            if (warpData) {
+              const users = await getUsersByIds([warpData.ownerId]);
+              const warpWithUser = { ...warpData, user: users[warpData.ownerId] };
+              setSharedWarp(warpWithUser as Warp);
+            }
+          }
+        }
       }
-    }
-  }, [loading, profile, searchParams]);
+    };
+
+    handlePostOnboarding();
+  }, [onboardingCompleted, loading, profile, searchParams, hasHandledRedirect]);
 
   const handleOnboardingComplete = () => {
+    setOnboardingCompleted(true);
     if (Notification.permission === 'default') {
       setTimeout(async () => {
         const permission = await Notification.requestPermission();
@@ -107,14 +126,14 @@ const AppContent = () => {
     }
   };
 
-  if (loading || redirecting) {
+  if (loading) {
     return <div className="w-screen h-screen bg-black" />;
   }
 
   return (
     <>
       <GridCanvas />
-      {user && profile && <GridUIManager />}
+      {user && profile && <GridUIManager sharedWarp={sharedWarp || undefined} />}
       {!profile && (
         <OnboardingFlow onComplete={handleOnboardingComplete} />
       )}
