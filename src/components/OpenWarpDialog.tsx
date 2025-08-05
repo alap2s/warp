@@ -19,13 +19,13 @@ interface OpenWarpDialogProps {
   onClose: () => void;
   onSizeChange?: (size: { width: number; height: number }) => void;
   onEdit: () => void;
+  isPreview?: boolean;
 }
 
-const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEdit }: OpenWarpDialogProps) => {
+const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEdit, isPreview = false }: OpenWarpDialogProps) => {
   const { user: currentUser } = useAuth();
   const [isJoined, setIsJoined] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  //const participants = warp.participants || [];
   const participants = React.useMemo(() => warp.participants || [], [warp.participants]);
   const prevParticipants = usePrevious(participants);
 
@@ -44,7 +44,7 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
   if (!warp) return null;
 
   const handleJoin = async () => {
-    if (!currentUser) {
+    if (isPreview || !currentUser) {
       window.location.href = `/?redirectTo=/warp/${warp.id}`;
       return;
     }
@@ -89,7 +89,6 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
       }
     } else {
       navigator.clipboard.writeText(url);
-      // You might want to show a toast notification here to confirm the copy
     }
   };
 
@@ -115,7 +114,6 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
               <IconButton variant="outline" onClick={handleShare}><Share size={16} /></IconButton>
             </div>
           ) : (
-            currentUser && (
               <Button
                 variant={isJoined ? "tertiary" : "primary"}
                 onClick={isJoined ? handleLeave : handleJoin}
@@ -131,7 +129,7 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
                 )}
               </Button>
             )
-          )}
+          }
         </DialogHeader>
         <hr className="border-white/20" />
         <div className="flex flex-col gap-4">
