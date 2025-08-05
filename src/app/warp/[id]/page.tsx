@@ -16,39 +16,41 @@ const WarpLoader = () => {
   const router = useRouter();
   const { profile, loading } = useAuth();
   const [warp, setWarp] = useState<Warp | null>(null);
-  const [warpExists, setWarpExists] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (loading) return; // Wait for auth to resolve
+    if (loading) {
+      return;
+    }
 
+    // If there's no profile, it's a new user. Redirect to onboarding on the main page.
+    if (!profile) {
+      window.location.href = `/?redirectTo=/warp/${id}`;
+      return;
+    }
+
+    // Existing user: fetch the warp data directly.
     const fetchWarp = async () => {
       const warpData = await getWarp(id);
       if (warpData) {
         const users = await getUsersByIds([warpData.ownerId]);
         const warpWithUser = { ...warpData, user: users[warpData.ownerId] };
         setWarp(warpWithUser as Warp);
-        setWarpExists(true);
       } else {
-        setWarpExists(false);
+        // If the warp doesn't exist for an existing user, just go home.
+        router.push('/');
       }
     };
+
     fetchWarp();
-  }, [id, loading]);
+  }, [id, loading, profile, router]);
 
-  useEffect(() => {
-    if (warpExists === false) {
-      router.push('/');
-    }
-  }, [warpExists, router]);
-
-  // If we're still determining if the warp exists, or if auth is loading, or if the warp is being fetched, show a blank screen.
-  if (warpExists === null || loading || !warp) {
+  // For existing users, show a loading state while fetching.
+  if (loading || !warp) {
     return <div className="w-screen h-screen bg-black" />;
   }
   
-  // Pass the loaded warp to the UI manager and let it handle the logic
-  // If there's no profile, it's a preview.
-  return <GridUIManager sharedWarp={warp} isPreview={!profile} />;
+  // Existing users see the warp UI directly on this page.
+  return <GridUIManager sharedWarp={warp} />;
 };
 
 

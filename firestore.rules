@@ -32,4 +32,4 @@ service cloud.firestore {
       allow create: if request.auth.uid == request.resource.data.actorId;
     }
   }
-} 
+}

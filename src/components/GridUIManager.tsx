@@ -95,13 +95,15 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   const [segmentedControlSelection, setSegmentedControlSelection] = React.useState('Everyone');
   const [warpPositions, setWarpPositions] = React.useState<{ [key: string]: { x: number, y: number } }>({});
   const [screenSize, setScreenSize] = React.useState({ width: 0, height: 0 });
+  const [sharedWarpHandled, setSharedWarpHandled] = React.useState(false);
 
   React.useEffect(() => {
-    if (sharedWarp && !isPreview) {
+    if (sharedWarp && !isPreview && !sharedWarpHandled) {
       setActiveWarp(sharedWarp);
       openWarpDialog();
+      setSharedWarpHandled(true);
     }
-  }, [sharedWarp, isPreview, setActiveWarp, openWarpDialog]);
+  }, [sharedWarp, isPreview, setActiveWarp, openWarpDialog, sharedWarpHandled]);
 
   React.useEffect(() => {
     const debouncedUpdate = debounce(() => {
@@ -232,10 +234,10 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   };
 
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Clicks on the background should deselect the active warp.
-    // We check the class name to make sure we're not clicking on a tile.
+    // Clicks on the background should deselect the active warp and close the dialog.
     if ((e.target as HTMLElement).classList.contains('grid-ui-manager')) {
       setActiveWarp(null);
+      closeWarpDialog();
     }
   }
 
