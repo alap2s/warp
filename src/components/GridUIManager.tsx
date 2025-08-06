@@ -321,7 +321,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
             onClick={() => handleWarpClick(activeWarp)}
             isNew={notifications.some(n => n.warpId === activeWarp.id && n.type === 'new_warp')}
             joinerCount={notifications.filter(n => n.warpId === activeWarp.id && n.type === 'warp_join').length}
-            participantCount={activeWarp.participants.length}
+            participantCount={Math.max(0, activeWarp.participants.length)}
             onSizeChange={setCenterTileSize}
           />
         )}
@@ -338,7 +338,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
             onClick={() => handleWarpClick(myWarp)}
             isNew={notifications.some(n => n.warpId === myWarp.id && n.type === 'new_warp')}
             joinerCount={notifications.filter(n => n.warpId === myWarp.id && n.type === 'warp_join').length}
-            participantCount={myWarp.participants.length}
+            participantCount={Math.max(0, myWarp.participants.length)}
             onSizeChange={setCenterTileSize}
           />
         ) : (
@@ -365,7 +365,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
               }}
               isNew={notifications.some(n => n.warpId === warp.id && n.type === 'new_warp')}
               joinerCount={notifications.filter(n => n.warpId === warp.id && n.type === 'warp_join').length}
-              participantCount={warp.participants.length}
+              participantCount={Math.max(0, warp.participants.length)}
             />
           )
         );
@@ -408,7 +408,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
       <AnimatePresence>
         {profile && !isAnyDialogueOpen && (
           <motion.div
-            className="absolute bottom-[20px] left-1/2 -translate-x-1/2 z-50"
+            className="absolute bottom-[40px] left-1/2 -translate-x-1/2 z-50"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
