@@ -91,7 +91,7 @@ const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({
       <div className="absolute -top-2 -right-2">
         {joinerCount && joinerCount > 0 ? (
           <div className="bg-white rounded-full px-2 py-1">
-            <p className="text-black text-xs font-bold">+1</p>
+            <p className="text-black text-xs font-bold">+{joinerCount}</p>
           </div>
         ) : isNew ? (
           <div className="bg-white rounded-full px-2 py-1">

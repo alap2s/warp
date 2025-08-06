@@ -63,7 +63,7 @@ const DialogHeader = ({ title, children, className }: DialogHeaderProps) => {
   useAutoFitFontSize(titleArray, titleRef as React.RefObject<HTMLDivElement>);
 
   return (
-    <div className={cn("flex justify-between items-start gap-2", className)}>
+    <div className={cn("flex justify-between items-center gap-2", className)}>
       <div ref={titleRef} className="flex-grow" style={{ minWidth: 0 }}>
         {titleArray.map((word, index) => (
           <h2
@@ -74,7 +74,7 @@ const DialogHeader = ({ title, children, className }: DialogHeaderProps) => {
           </h2>
         ))}
       </div>
-      <div className="flex-shrink-0 flex items-start gap-2">
+      <div className="flex-shrink-0 flex items-center gap-2">
         {children}
       </div>
     </div>
