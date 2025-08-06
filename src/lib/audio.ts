@@ -111,8 +111,8 @@ export const playDialogSound = (action: 'open' | 'close') => {
 };
 
 export const playNotification = () => {
-  if (!isInitialized || !notificationSynth) return;
-  notificationSynth.triggerAttackRelease("A5", "16n");
+  if (!isInitialized || !notificationSynth || !ToneJs) return;
+  notificationSynth.triggerAttackRelease("A5", "16n", ToneJs.now());
 };
 
 export const playJoinWarp = () => {
