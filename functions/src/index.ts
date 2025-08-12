@@ -2,8 +2,9 @@ import {onDocumentCreated, onDocumentUpdated} from "firebase-functions/v2/firest
 import * as admin from "firebase-admin";
 import {QueryDocumentSnapshot} from "firebase-admin/firestore";
 import {onSchedule} from "firebase-functions/v2/scheduler";
-import {RETENTION_PERIODS} from "./config";
-import * as functions from "firebase-functions";
+import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {getMessaging} from "firebase-admin/messaging";
+import {getAuth} from "firebase-admin/auth";
 
 admin.initializeApp();
 
@@ -25,28 +26,43 @@ export const sendNotificationOnWarpCreate = onDocumentCreated({
   const ownerId = newWarp.ownerId;
   const warpId = event.params.warpId;
 
-  // Get all users except the owner
-  const usersSnapshot = await db.collection("users").where("uid", "!=", ownerId).get();
+  // Get all users
+  const usersSnapshot = await db.collection("users").get();
 
   const notifications: Promise<any>[] = [];
+  const fcmMessages: Promise<any>[] = [];
 
   usersSnapshot.forEach((userDoc: QueryDocumentSnapshot) => {
     const user = userDoc.data();
-    // Send notification only if the user has them enabled
+    if (user.uid === ownerId) {
+      return;
+    }
+
     if (user.notificationsEnabled) {
       const notification = {
         userId: user.uid,
         type: "new_warp",
         warpId: warpId,
-        actorId: ownerId, // The actor is the person who created the warp
+        actorId: ownerId,
         read: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       };
       notifications.push(db.collection("notifications").add(notification));
+
+      if (user.fcmTokens && user.fcmTokens.length > 0) {
+        const message = {
+          notification: {
+            title: "A new warp has appeared!",
+            body: "Check it out!",
+          },
+          tokens: user.fcmTokens,
+        };
+        fcmMessages.push(getMessaging().sendEachForMulticast(message));
+      }
     }
   });
 
-  await Promise.all(notifications);
+  await Promise.all([...notifications, ...fcmMessages]);
 });
 
 /**
@@ -68,117 +84,158 @@ export const sendNotificationOnWarpJoin = onDocumentUpdated({
   const afterData = afterSnap.data();
   const warpId = event.params.warpId;
 
-  // Check if the participants array has grown
   if (afterData.participants.length > beforeData.participants.length) {
-    // Find the new participant by comparing the before and after arrays
     const newParticipantId = afterData.participants.find(
       (p: string) => !beforeData.participants.includes(p),
     );
 
     if (newParticipantId) {
       const ownerId = afterData.ownerId;
-
-      // Get the owner's profile to check if they have notifications enabled
       const ownerProfileDoc = await db.collection("users").doc(ownerId).get();
       const ownerProfile = ownerProfileDoc.data();
 
       if (ownerProfile && ownerProfile.notificationsEnabled) {
         const notification = {
-          userId: ownerId, // The notification is for the warp owner
+          userId: ownerId,
           type: "warp_join",
           warpId: warpId,
-          actorId: newParticipantId, // The actor is the person who joined
+          actorId: newParticipantId,
           read: false,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         };
 
-        return db.collection("notifications").add(notification);
+        const notificationPromise = db.collection("notifications").add(notification);
+        const promises: (Promise<any>)[] = [notificationPromise];
+
+        if (ownerProfile.fcmTokens && ownerProfile.fcmTokens.length > 0) {
+            const actorProfileDoc = await db.collection("users").doc(newParticipantId).get();
+            const actorProfile = actorProfileDoc.data();
+            const warpName = afterData.what || "a warp";
+
+            if (actorProfile) {
+                const message = {
+                    notification: {
+                        title: "Someone joined your warp!",
+                        body: `${actorProfile.username} just joined ${warpName}.`,
+                    },
+                    tokens: ownerProfile.fcmTokens,
+                };
+                promises.push(getMessaging().sendEachForMulticast(message));
+            }
+        }
+        return Promise.all(promises);
       }
     }
   }
-  return null; // No change in participants, so no notification
+  return null;
 });
 
-export const cleanupOldData = onSchedule({
-  schedule: "every 1 hours",
+export const deleteUserAccount = onCall({region: "europe-west3"}, async (request) => {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "You must be logged in to delete your account.");
+    }
+
+    const userId = request.auth.uid;
+    const batch = db.batch();
+
+    // 1. Remove the user from any warps they've joined
+    const warpsJoinedSnapshot = await db.collection("warps")
+        .where("participants", "array-contains", userId)
+        .get();
+    warpsJoinedSnapshot.forEach((doc) => {
+        batch.update(doc.ref, { participants: admin.firestore.FieldValue.arrayRemove(userId) });
+    });
+
+    // 2. Delete any warps owned by the user
+    const warpsOwnedSnapshot = await db.collection("warps")
+        .where("ownerId", "==", userId)
+        .get();
+    warpsOwnedSnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+    });
+
+    // 3. Delete notifications for and by the user
+    const notificationsForUserSnapshot = await db.collection("notifications").where("userId", "==", userId).get();
+    notificationsForUserSnapshot.forEach((doc) => { batch.delete(doc.ref); });
+    const notificationsByUserSnapshot = await db.collection("notifications").where("actorId", "==", userId).get();
+    notificationsByUserSnapshot.forEach((doc) => { batch.delete(doc.ref); });
+
+    // 4. Delete the user's profile
+    const userProfileRef = db.collection("users").doc(userId);
+    batch.delete(userProfileRef);
+    
+    // Commit all Firestore deletions
+    await batch.commit();
+
+    // 5. Finally, delete the user from Firebase Auth
+    await getAuth().deleteUser(userId);
+
+    return { success: true };
+});
+
+export const cleanupOrphanedData = onSchedule({
+  schedule: "every 24 hours",
   region: "europe-west3",
 }, async () => {
-  const now = admin.firestore.Timestamp.now();
-  const cutoff = new admin.firestore.Timestamp(
-    now.seconds - RETENTION_PERIODS.WARP * 60 * 60,
-    now.nanoseconds
-  );
+    const batchSize = 100;
+    let userIds = new Set<string>();
 
-  const oldWarpsSnapshot = await db.collection("warps")
-    .where("when", "<", cutoff)
-    .get();
-
-  const batch = db.batch();
-  const warpIdsToDelete: string[] = [];
-
-  oldWarpsSnapshot.forEach((doc) => {
-    warpIdsToDelete.push(doc.id);
-    batch.delete(doc.ref);
-  });
-
-  if (warpIdsToDelete.length > 0) {
-    const notificationsSnapshot = await db.collection("notifications")
-      .where("warpId", "in", warpIdsToDelete)
-      .get();
-
-    notificationsSnapshot.forEach((doc) => {
-      batch.delete(doc.ref);
+    // Step 1: Gather all unique user IDs from warps and notifications
+    const warpsSnapshot = await db.collection("warps").get();
+    warpsSnapshot.forEach(doc => {
+        const data = doc.data();
+        userIds.add(data.ownerId);
+        if (data.participants) {
+            data.participants.forEach((p: string) => userIds.add(p));
+        }
     });
-  }
 
-  await batch.commit();
-});
-
-export const onUserDelete = functions.region("europe-west3").auth.user().onDelete(async (user) => {
-  const userId = user.uid;
-  const batch = db.batch();
-
-  // 1. Remove the user from any warps they've joined
-  const warpsJoinedSnapshot = await db.collection("warps")
-    .where("participants", "array-contains", userId)
-    .get();
-
-  warpsJoinedSnapshot.forEach((doc) => {
-    batch.update(doc.ref, {
-      participants: admin.firestore.FieldValue.arrayRemove(userId),
+    const notificationsSnapshot = await db.collection("notifications").get();
+    notificationsSnapshot.forEach(doc => {
+        const data = doc.data();
+        userIds.add(data.userId);
+        userIds.add(data.actorId);
     });
-  });
 
-  // 2. Delete any warps owned by the user
-  const warpsOwnedSnapshot = await db.collection("warps")
-    .where("ownerId", "==", userId)
-    .get();
+    const uniqueUserIds = Array.from(userIds);
+    const existingUserIds = new Set<string>();
 
-  warpsOwnedSnapshot.forEach((doc) => {
-    batch.delete(doc.ref);
-  });
+    // Step 2: Check for user existence in batches
+    for (let i = 0; i < uniqueUserIds.length; i += batchSize) {
+        const batchIds = uniqueUserIds.slice(i, i + batchSize);
+        const userResults = await getAuth().getUsers(batchIds.map(uid => ({ uid })));
+        userResults.users.forEach(user => existingUserIds.add(user.uid));
+    }
 
-  // 3. Delete notifications sent TO the user
-  const notificationsForUserSnapshot = await db.collection("notifications")
-    .where("userId", "==", userId)
-    .get();
-  
-  notificationsForUserSnapshot.forEach((doc) => {
-    batch.delete(doc.ref);
-  });
+    // Step 3: Identify orphaned user IDs
+    const orphanedIds = uniqueUserIds.filter(uid => !existingUserIds.has(uid));
 
-  // 4. Delete notifications created BY the user
-  const notificationsByUserSnapshot = await db.collection("notifications")
-    .where("actorId", "==", userId)
-    .get();
+    if (orphanedIds.length === 0) {
+        console.log("No orphaned data found.");
+        return;
+    }
 
-  notificationsByUserSnapshot.forEach((doc) => {
-    batch.delete(doc.ref);
-  });
+    // Step 4: Delete orphaned data
+    const batch = db.batch();
+    for (const userId of orphanedIds) {
+        // Delete user profile
+        batch.delete(db.collection("users").doc(userId));
+        
+        // Delete warps owned by user
+        const warpsOwnedSnapshot = await db.collection("warps").where("ownerId", "==", userId).get();
+        warpsOwnedSnapshot.forEach(doc => batch.delete(doc.ref));
 
-  // 5. Delete the user's profile
-  const userProfileRef = db.collection("users").doc(userId);
-  batch.delete(userProfileRef);
+        // Remove from participants
+        const warpsJoinedSnapshot = await db.collection("warps").where("participants", "array-contains", userId).get();
+        warpsJoinedSnapshot.forEach(doc => batch.update(doc.ref, { participants: admin.firestore.FieldValue.arrayRemove(userId) }));
 
-  return batch.commit();
+        // Delete notifications
+        const notificationsForUserSnapshot = await db.collection("notifications").where("userId", "==", userId).get();
+        notificationsForUserSnapshot.forEach(doc => batch.delete(doc.ref));
+        const notificationsByUserSnapshot = await db.collection("notifications").where("actorId", "==", userId).get();
+        notificationsByUserSnapshot.forEach(doc => batch.delete(doc.ref));
+    }
+
+    await batch.commit();
+    console.log(`Cleaned up orphaned data for ${orphanedIds.length} users.`);
 });
