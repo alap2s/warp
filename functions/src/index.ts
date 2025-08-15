@@ -5,6 +5,7 @@ import {onSchedule} from "firebase-functions/v2/scheduler";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {getMessaging} from "firebase-admin/messaging";
 import {getAuth} from "firebase-admin/auth";
+import {RETENTION_PERIODS} from "./config";
 
 admin.initializeApp();
 
@@ -238,4 +239,90 @@ export const cleanupOrphanedData = onSchedule({
 
     await batch.commit();
     console.log(`Cleaned up orphaned data for ${orphanedIds.length} users.`);
+});
+
+export const cleanupExpiredWarps = onSchedule({
+  schedule: "every 1 hours",
+  region: "europe-west3",
+}, async () => {
+  const now = admin.firestore.Timestamp.now();
+  const cutoff = new admin.firestore.Timestamp(
+    now.seconds - RETENTION_PERIODS.WARP * 60 * 60,
+    now.nanoseconds
+  );
+
+  const oldWarpsSnapshot = await db.collection("warps")
+    .where("when", "<", cutoff)
+    .get();
+
+  const batch = db.batch();
+  const warpIdsToDelete: string[] = [];
+
+  oldWarpsSnapshot.forEach((doc) => {
+    warpIdsToDelete.push(doc.id);
+    batch.delete(doc.ref);
+  });
+
+  if (warpIdsToDelete.length > 0) {
+    const notificationsSnapshot = await db.collection("notifications")
+      .where("warpId", "in", warpIdsToDelete)
+      .get();
+
+    notificationsSnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+  }
+
+  await batch.commit();
+});
+
+export const cleanupOrphanedNotifications = onSchedule({
+  schedule: "every 24 hours",
+  region: "europe-west3",
+}, async () => {
+  // 1. Get all existing warp IDs
+  const warpIds = new Set<string>();
+  const warpsSnapshot = await db.collection("warps").select().get();
+  warpsSnapshot.forEach((doc) => warpIds.add(doc.id));
+
+  // 2. Find and delete notifications with non-existent warp IDs in chunks
+  const notificationsQuery = db.collection("notifications");
+  let lastVisible: admin.firestore.QueryDocumentSnapshot | null = null;
+  let totalOrphanedCount = 0;
+  const batchLimit = 400; // Firestore batch limit is 500, use a safe number
+
+  while (true) {
+    let query = notificationsQuery.limit(batchLimit);
+    if (lastVisible) {
+      query = query.startAfter(lastVisible);
+    }
+
+    const snapshot = await query.get();
+    if (snapshot.empty) {
+      break;
+    }
+
+    const batch = db.batch();
+    let batchDeletes = 0;
+    snapshot.forEach((doc) => {
+      const notification = doc.data();
+      if (notification.warpId && !warpIds.has(notification.warpId)) {
+        batch.delete(doc.ref);
+        batchDeletes++;
+      }
+    });
+
+    if (batchDeletes > 0) {
+      await batch.commit();
+      totalOrphanedCount += batchDeletes;
+    }
+
+    lastVisible = snapshot.docs[snapshot.docs.length - 1];
+  }
+
+  if (totalOrphanedCount > 0) {
+    console.log(`Cleaned up ${totalOrphanedCount} orphaned notifications.`);
+  } else {
+    console.log("No orphaned notifications found.");
+  }
 });
