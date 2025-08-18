@@ -8,7 +8,7 @@ import { MakeWarpDialog } from './MakeWarpDialog';
 import WarpTile from './WarpTile';
 import MeDialog from './MeDialog';
 import UpdateAvatarDialog from './UpdateAvatarDialog';
-import SegmentedControl from './ui/SegmentedControl';
+import NavBar from './ui/NavBar';
 import { Plus } from 'lucide-react';
 import OpenWarpDialog from './OpenWarpDialog';
 import LoadingDialog from './ui/LoadingDialog';
@@ -92,7 +92,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   const [isPreparingWarp, setIsPreparingWarp] = React.useState(false);
   const [participantProfiles, setParticipantProfiles] = React.useState<UserProfile[]>([]);
   const [isUpdatingAvatar, setUpdatingAvatar] = React.useState(false);
-  const [segmentedControlSelection, setSegmentedControlSelection] = React.useState('Everyone');
+  const [segmentedControlSelection, setSegmentedControlSelection] = React.useState('World');
   const [warpPositions, setWarpPositions] = React.useState<{ [key: string]: { x: number, y: number } }>({});
   const [screenSize, setScreenSize] = React.useState({ width: 0, height: 0 });
   const [sharedWarpHandled, setSharedWarpHandled] = React.useState(false);
@@ -214,7 +214,8 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
     }
   }, [warps, activeWarp, setActiveWarp]);
 
-  const isAnyDialogueOpen = isMakeWarpDialogOpen || isOpenWarpDialogOpen || !!meDialogSize || isUpdatingAvatar;
+  const shouldHideNavBar = isMakeWarpDialogOpen || isOpenWarpDialogOpen || isUpdatingAvatar;
+  const showTiles = !isMakeWarpDialogOpen && !isOpenWarpDialogOpen && !meDialogSize && !isUpdatingAvatar && !isPreview;
 
   const handleAvatarSave = async (newIcon: string) => {
     if (user) {
@@ -255,7 +256,6 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   
   const myWarp = user && warps ? warps.find(warp => warp.ownerId === user.uid) : null;
   const otherWarps = user && profile && warps ? warps.filter(warp => warp.ownerId !== user.uid) : [];
-  const showTiles = !isAnyDialogueOpen && !isPreview;
 
   if (isPreview) {
     if (!sharedWarp) {
@@ -379,7 +379,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
               userProfile={profile}
               onClose={() => {
                 setMeDialogSize(null)
-                setSegmentedControlSelection('Friends');
+                setSegmentedControlSelection('World');
                 playDialogSound('close');
               }}
               onSizeChange={setMeDialogSize}
@@ -406,7 +406,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
         />
       )}
       <AnimatePresence>
-        {profile && !isAnyDialogueOpen && (
+        {profile && !shouldHideNavBar && (
           <motion.div
             className="absolute bottom-[40px] left-1/2 -translate-x-1/2 z-50"
             initial={{ opacity: 0, y: 20 }}
@@ -414,12 +414,12 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2 }}
           >
-            <SegmentedControl
-              options={['Everyone', 'Friends', 'Me']}
+            <NavBar
+              options={[{ label: 'World' }, { label: 'Friends' }, { label: 'Settings' }]}
               value={segmentedControlSelection}
               onSelect={(option) => {
                 setSegmentedControlSelection(option);
-                if (option === 'Me') {
+                if (option === 'Settings') {
                   playDialogSound('open');
                   setMeDialogSize({ width: 300, height: 557 });
                 } else {
