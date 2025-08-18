@@ -296,6 +296,28 @@ export const MakeWarpDialog = ({
     }
   };
 
+  const handleLocationReset = () => {
+    setWhereValue('Fetching location...');
+    setIsGeocoding(true);
+    getCurrentCoordinates()
+      .then(coords => {
+        setCoordinates(coords);
+        return getAddressFromCoordinates(coords.lat, coords.lng);
+      })
+      .then(address => {
+        setWhereValue(address);
+        setFoundLocationName(address);
+        setGeocodingStatus('success');
+      })
+      .catch(() => {
+          setWhereValue(''); // Clear on error
+        setGeocodingStatus('error');
+      })
+      .finally(() => {
+        setIsGeocoding(false);
+      });
+  };
+
   const dayOptions = Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() + i);
@@ -323,17 +345,14 @@ export const MakeWarpDialog = ({
         </IconButton>
       </DialogHeader>
 
-        <div className="relative">
-          <Input
-            ref={whatInputRef}
-            placeholder="What?"
-            className="pl-10"
-            value={whatValue}
-            onChange={(e) => setWhatValue(e.target.value)}
-            maxLength={60}
-          />
-          <DynamicIcon name={currentIconName} className={`absolute left-3 top-1/2 -translate-y-1/2 ${whatValue ? 'text-white' : 'text-gray-400'}`} size={16} strokeWidth={2.25} />
-        </div>
+        <Input
+          ref={whatInputRef}
+          placeholder="What?"
+          value={whatValue}
+          onChange={(e) => setWhatValue(e.target.value)}
+          maxLength={60}
+          icon={<DynamicIcon name={currentIconName} size={16} strokeWidth={2.25} />}
+        />
 
         <div className="relative">
           <div className="flex items-center w-full h-12 rounded-lg border border-transparent bg-[#2D2D2D] px-3 text-base font-medium text-white">
@@ -374,32 +393,30 @@ export const MakeWarpDialog = ({
           </div>
         </div>
 
-        <div className="relative">
-          <Input
-            placeholder="Where?"
-            value={whereValue}
-            onChange={(e) => setWhereValue(e.target.value)}
-            className="pl-10"
-          />
-          <div className="absolute left-3 top-1/2 -translate-y-1/2">
-            {isGeocoding ? (
-              <Loader2 className="animate-spin text-gray-400" size={16} strokeWidth={2.25} />
+        <Input
+          placeholder="Where?"
+          value={whereValue}
+          onChange={(e) => setWhereValue(e.target.value)}
+          onIconClick={handleLocationReset}
+          icon={
+            isGeocoding ? (
+              <Loader2 className="animate-spin" size={16} strokeWidth={2.25} />
             ) : geocodingStatus === 'success' ? (
-              <MapPinCheckInside className="text-white" size={16} strokeWidth={2.25} />
+              <MapPinCheckInside size={16} strokeWidth={2.25} />
             ) : geocodingStatus === 'error' ? (
-              <MapPinXInside className="text-white" size={16} strokeWidth={2.25} />
+              <MapPinXInside size={16} strokeWidth={2.25} />
             ) : (
-              <MapPin className={`${whereValue && whereValue !== 'Fetching location...' ? 'text-white' : 'text-gray-400'}`} size={16} strokeWidth={2.25} />
-            )}
-          </div>
-        </div>
-        <div className="h-4"> 
-          {geocodingStatus && foundLocationName && whereValue !== foundLocationName && (
-            <div className={`text-xs px-3 text-white/40`}>
-              {geocodingStatus === 'success' ? `Found: ${foundLocationName}` : `Couldn't find that location.`}
-            </div>
-          )}
-        </div>
+              <MapPin size={16} strokeWidth={2.25} />
+            )
+          }
+          helperText={
+            geocodingStatus && foundLocationName && whereValue !== foundLocationName && (
+              <div className={`text-xs text-white/40`}>
+                {geocodingStatus === 'success' ? foundLocationName : `Couldn't find that location.`}
+              </div>
+            )
+          }
+        />
     </Dialog>
   );
 };
