@@ -20,6 +20,12 @@ export const getCurrentCoordinates = (): Promise<{ lat: number; lng: number }> =
     });
 };
 
+interface AddressComponent {
+  long_name: string;
+  short_name: string;
+  types: string[];
+}
+
 export const getAddressFromCoordinates = async (lat: number, lng: number): Promise<string> => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
@@ -33,7 +39,13 @@ export const getAddressFromCoordinates = async (lat: number, lng: number): Promi
         const response = await fetch(url);
         const data = await response.json();
         if (data.results && data.results.length > 0) {
-            return data.results[0].formatted_address;
+            const addressComponents: AddressComponent[] = data.results[0].address_components;
+            const streetNumber = addressComponents.find((c) => c.types.includes('street_number'))?.long_name || '';
+            const route = addressComponents.find((c) => c.types.includes('route'))?.long_name || '';
+            const city = addressComponents.find((c) => c.types.includes('locality'))?.long_name || '';
+            
+            const addressParts = [streetNumber, route, city].filter(Boolean);
+            return addressParts.join(', ');
         } else {
             return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
         }

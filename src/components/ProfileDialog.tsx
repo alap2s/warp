@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import Dialog from './ui/Dialog';
+import { AtSign, Check } from 'lucide-react';
 import { IconButton } from './ui/IconButton';
 import { Input } from './ui/Input';
-import { Check, AtSign, Loader2, CheckCircle2 } from 'lucide-react';
-import Dialog from './ui/Dialog';
 import ThumbavatarSelector from './ui/ThumbavatarSelector';
 import { debounce } from 'lodash';
 import { isUsernameAvailable } from '@/lib/user';
@@ -86,25 +86,23 @@ export const ProfileDialog = ({
       </div>
 
       <div className="flex flex-col gap-3">
-        <div className="relative flex items-center">
-          <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" size={16} strokeWidth={2.25} />
-          <Input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={handleUsernameChange}
-            className="pl-10 pr-10" // Added pr-10 for spacing
-          />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-            {isLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin text-white/40" />
-            ) : isAvailable === true ? (
-              <CheckCircle2 className="h-5 w-5 text-white" />
+        <Input
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={handleUsernameChange}
+          icon={<AtSign size={16} strokeWidth={2.25} />}
+          autoComplete="off"
+          helperText={
+            isLoading ? (
+              <p className="text-xs text-gray-400">Checking...</p>
+            ) : isAvailable === true && username.length >=3 ? (
+              <p className="text-xs text-gray-400">Available</p>
             ) : isAvailable === false && username.length > 0 ? (
-              <span className="text-white text-xs font-bold">Taken</span>
-            ) : null}
-          </div>
-        </div>
+              <p className="text-xs text-gray-400">Unavailable</p>
+            ) : null
+          }
+        />
         <div className="flex flex-col gap-2 bg-white/5 border border-white/10 rounded-2xl p-3">
           <p className="text-xs font-medium text-white/40 -mt-1">Choose your thumbavatar</p>
           <ThumbavatarSelector

@@ -2,38 +2,29 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { initAudio, playAppOpen } from '@/lib/audio';
+import { initAudio } from '@/lib/audio';
 
 export const AppInitializer = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
-    const handleFirstInteraction = async (event: Event) => {
-        // Prevent sound from playing if the user is typing in an input.
-        const target = event.target as HTMLElement;
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
-            return;
-        }
-
-      // Always initialize audio on the first user gesture.
+    const handleFirstInteraction = async () => {
+      // Initialize audio on the first user gesture.
       // This function is idempotent, so it's safe to call.
       await initAudio();
-
-      const hasUnlockedBefore = localStorage.getItem('audioUnlocked') === 'true';
-
-      if (hasUnlockedBefore) {
-        // This is a return visit. The first interaction plays the sound.
-        playAppOpen();
-      } else {
-        // This is the very first visit. Set the flag for future visits.
-        localStorage.setItem('audioUnlocked', 'true');
-      }
     };
 
-    // These listeners will only fire once, then automatically remove themselves.
+    // Add event listeners for the first user interaction.
+    // These will be removed automatically after the first call.
     window.addEventListener('click', handleFirstInteraction, { once: true });
     window.addEventListener('touchstart', handleFirstInteraction, { once: true });
     window.addEventListener('keydown', handleFirstInteraction, { once: true });
 
-  }, []); // The empty dependency array ensures this setup runs only once when the component mounts.
+    // Cleanup function to remove event listeners if the component unmounts.
+    return () => {
+      window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('touchstart', handleFirstInteraction);
+      window.removeEventListener('keydown', handleFirstInteraction);
+    };
+  }, []); // The empty dependency array ensures this setup runs only once.
 
   return <>{children}</>;
 };
