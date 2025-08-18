@@ -47,6 +47,7 @@ const NavBar = forwardRef<HTMLDivElement, NavBarProps>(({ options, onSelect, val
   return (
     <motion.div
       ref={ref}
+      initial={false}
       layout
       transition={{ type: 'spring', stiffness: 300, damping: 35 }}
       className="flex items-center justify-center p-1 bg-[#1f1f1f] rounded-xl border-2 border-white"

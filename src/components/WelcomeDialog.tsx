@@ -77,9 +77,7 @@ export const WelcomeDialog = ({
           <p>Warp</p>
         </div>
         {(displayMode === 'standalone' || platform === 'Desktop') && (
-          <IconButton variant="outline" onClick={onNext}>
-            <ArrowRight size={16} strokeWidth={2.25} />
-          </IconButton>
+          <IconButton variant="outline" onClick={onNext} icon={ArrowRight} />
         )}
       </div>
       <div className="mt-0">

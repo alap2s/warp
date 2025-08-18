@@ -109,10 +109,10 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
       
         <DialogHeader title={warp.user?.username || '...'}>
           {currentUser?.uid === warp.ownerId ? (
-            <div className="flex gap-2">
-              <IconButton variant="outline" onClick={onEdit}><Edit size={16} /></IconButton>
-              <IconButton variant="outline" onClick={handleShare}><Share size={16} /></IconButton>
-            </div>
+            <>
+              <IconButton variant="outline" onClick={onEdit} icon={Edit} />
+              <IconButton variant="outline" onClick={handleShare} icon={Share} />
+            </>
           ) : (
               <Button
                 variant={isJoined ? "tertiary" : "primary"}
@@ -148,7 +148,7 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
             <div className="flex items-center justify-between cursor-pointer gap-2" onClick={handleLocationClick}>
               <p className="text-lg text-white">{where}</p>
               {warp.coordinates && (
-                <SquareArrowOutUpRight className="text-white/40" size={24} strokeWidth={2.5} />
+                <SquareArrowOutUpRight className="text-white/40 flex-shrink-0" size={20} strokeWidth={2.5} />
               )}
             </div>
           </div>

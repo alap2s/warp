@@ -19,6 +19,7 @@ import type { Warp, UserProfile } from '@/lib/types';
 import { debounce } from 'lodash';
 import { playDialogSound } from '@/lib/audio';
 import { useRouter } from 'next/navigation';
+import AddFriendsDialog from './AddFriendsDialog';
 
 const CreateWarpTile = React.forwardRef<HTMLDivElement, { onClick: () => void, onSizeChange?: (size: { width: number, height: number } | null) => void }>(({ onClick, onSizeChange }, ref) => {
   useLayoutEffect(() => {
@@ -92,6 +93,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   const [isPreparingWarp, setIsPreparingWarp] = React.useState(false);
   const [participantProfiles, setParticipantProfiles] = React.useState<UserProfile[]>([]);
   const [isUpdatingAvatar, setUpdatingAvatar] = React.useState(false);
+  const [isAddFriendsDialogOpen, setAddFriendsDialogOpen] = React.useState(false);
   const [segmentedControlSelection, setSegmentedControlSelection] = React.useState('World');
   const [warpPositions, setWarpPositions] = React.useState<{ [key: string]: { x: number, y: number } }>({});
   const [screenSize, setScreenSize] = React.useState({ width: 0, height: 0 });
@@ -276,7 +278,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   return (
     <div className="absolute inset-0 grid-ui-manager" onClick={handleGridClick}>
       <AnimatePresence>
-        {isLoading && <LoadingDialog />}
+        {isLoading && <LoadingDialog key="loading" />}
         {profile && isMakeWarpDialogOpen && (
           <MakeWarpDialog
             key={warpToEdit ? 'edit' : 'new'}
@@ -288,12 +290,14 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
             onSizeChange={setDialogSize}
           />
         )}
+        {profile && <AddFriendsDialog key="add-friends" isOpen={isAddFriendsDialogOpen} onClose={() => setAddFriendsDialogOpen(false)} />}
         {profile && isOpenWarpDialogOpen && activeWarp && (
 
           isPreparingWarp ? (
-            <LoadingDialog />
+            <LoadingDialog key="preparing-warp" />
           ) : (
             <OpenWarpDialog
+              key={activeWarp.id}
               warp={activeWarp}
               participantProfiles={participantProfiles}
               onClose={() => {
@@ -422,6 +426,8 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
                 if (option === 'Settings') {
                   playDialogSound('open');
                   setMeDialogSize({ width: 300, height: 557 });
+                } else if (option === 'Friends') {
+                  setAddFriendsDialogOpen(true);
                 } else {
                   setMeDialogSize(null);
                 }

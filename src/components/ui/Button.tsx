@@ -12,7 +12,7 @@ const buttonVariants = cva(
         tertiary: "border-2 border-white/20 bg-transparent text-white/40 hover:bg-white/10",
       },
       size: {
-        default: "h-11 py-2 px-4",
+        default: "h-12 py-2 px-4",
       },
     },
     defaultVariants: {

@@ -79,14 +79,14 @@ export const ProfileDialog = ({
           <p>You</p>
         </div>
         <div className="flex gap-2">
-          <IconButton variant="default" onClick={handleSave} disabled={!isValid || isLoading}>
-            <Check size={16} strokeWidth={2.25} />
-          </IconButton>
+          <IconButton variant="default" onClick={handleSave} disabled={!isValid || isLoading} icon={Check} />
         </div>
       </div>
 
       <div className="flex flex-col gap-3">
         <Input
+          id="username"
+          name="username"
           type="text"
           placeholder="Username"
           value={username}
