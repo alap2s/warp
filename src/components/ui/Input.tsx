@@ -9,14 +9,15 @@ export type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
 };
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, value, icon, helperText, onIconClick, ...props }, ref) => {
+  ({ className, value, icon, helperText, onIconClick, onChange, ...props }, ref) => {
     const [isFocused, setIsFocused] = React.useState(false);
     const hasValue = value && String(value).length > 0;
     const internalRef = React.useRef<HTMLInputElement>(null);
 
     React.useImperativeHandle(ref, () => internalRef.current!);
 
-    const handleClear = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const handleClearMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault(); // Prevent the input from losing focus
       e.stopPropagation();
       const inputElement = internalRef.current;
       if (inputElement) {
@@ -46,13 +47,14 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             )}
             ref={internalRef}
             value={value}
+            onChange={onChange}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             {...props}
           />
           {hasValue && isFocused && (
             <button
-              onClick={handleClear}
+              onMouseDown={handleClearMouseDown}
               className="absolute right-0 flex h-full items-center"
               aria-label="Clear input"
             >
