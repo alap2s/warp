@@ -226,7 +226,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
 
     setWarpPositions(newPositions);
     
-  }, [tilesToDisplay, user, screenSize, segmentedControlSelection, friends]);
+  }, [tilesToDisplay, user, screenSize, segmentedControlSelection, friends, warps]);
 
   React.useEffect(() => {
 
