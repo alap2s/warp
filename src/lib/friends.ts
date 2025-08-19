@@ -1,5 +1,5 @@
 import { db, functions } from './firebase';
-import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, writeBatch, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, onSnapshot } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { UserProfile } from './types';
 
@@ -37,11 +37,14 @@ export const acceptInviteCode = async (code: string): Promise<void> => {
   try {
     const acceptInviteFunction = httpsCallable(functions, 'acceptInvite');
     await acceptInviteFunction({ code });
-  } catch (error: any) {
+  } catch (error) {
     // It's good practice to re-throw a more user-friendly error
     // or an error that's consistent with your app's error handling.
     console.error("Error calling acceptInvite function:", error);
-    throw new Error(error.message || 'Failed to accept invite code.');
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to accept invite code.');
+    }
+    throw new Error('An unknown error occurred while accepting invite code.');
   }
 };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, forwardRef, useEffect, useRef } from 'react';
+import React, { forwardRef, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Globe, Users, Settings } from 'lucide-react';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useLayoutEffect } from 'react';
+import React, { useLayoutEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { useGridState } from '@/context/GridStateContext';
@@ -92,7 +92,6 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
     isLoading,
     warps,
     setCenterTileSize,
-    filter,
     setFilter,
   } = useGridState();
   const centerTileRef = React.useRef<HTMLDivElement>(null);
@@ -128,6 +127,10 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
       setAddFriendsDialogOpen(false);
     }
   }, [segmentedControlSelection, friends]);
+
+  const friendsWithoutWarps = useMemo(() => {
+    return friends.filter(friend => !warps.some(warp => warp.ownerId === friend.uid));
+  }, [friends, warps]);
 
   React.useEffect(() => {
     const debouncedUpdate = debounce(() => {
@@ -209,7 +212,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
 
     setWarpPositions(newPositions);
     
-  }, [warps, user, screenSize, segmentedControlSelection, friends]);
+  }, [warps, user, screenSize, segmentedControlSelection, friends, friendsWithoutWarps]);
 
   React.useEffect(() => {
 
@@ -286,7 +289,6 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   
   const myWarp = user && warps ? warps.find(warp => warp.ownerId === user.uid) : null;
   const otherWarps = user && profile && warps ? warps.filter(warp => warp.ownerId !== user.uid) : [];
-  const friendsWithoutWarps = friends.filter(friend => !warps.some(warp => warp.ownerId === friend.uid));
 
   const tilesToDisplay = segmentedControlSelection === 'World'
     ? otherWarps

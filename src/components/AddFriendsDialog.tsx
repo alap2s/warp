@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Dialog from './ui/Dialog';
 import DialogHeader from './ui/DialogHeader';
-import { Button } from './ui/Button';
-import { Loader2, X, Upload, Copy, RefreshCw, UserPlus } from 'lucide-react';
+import { X, Upload, Copy, RefreshCw, UserPlus } from 'lucide-react';
 import { IconButton } from './ui/IconButton';
 import { Input } from './ui/Input';
 import { useAuth } from '@/context/AuthContext';
@@ -24,18 +23,18 @@ const AddFriendsDialog = ({ isOpen, onClose, onSizeChange, showCloseButton = tru
   const [friendCode, setFriendCode] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const createNewCode = async () => {
+  const createNewCode = useCallback(async () => {
     if (user) {
       const newCode = await generateInviteCode(user.uid);
       setInviteCode(newCode);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     if (isOpen) {
       createNewCode();
     }
-  }, [isOpen, user]);
+  }, [isOpen, createNewCode]);
 
   // Placeholder functions for button actions
   const handleCopy = async () => {
@@ -85,8 +84,12 @@ const AddFriendsDialog = ({ isOpen, onClose, onSizeChange, showCloseButton = tru
       alert('Friend added successfully!');
       setFriendCode('');
       onClose(); // Close the dialog on success
-    } catch (err: any) {
-      setError(err.message || 'An unknown error occurred.');
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message || 'An unknown error occurred.');
+      } else {
+        setError('An unknown error occurred.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -135,7 +138,7 @@ const AddFriendsDialog = ({ isOpen, onClose, onSizeChange, showCloseButton = tru
               onChange={(e) => setFriendCode(e.target.value)}
               icon={<UserPlus size={16} className="text-gray-400" />}
             />
-            <IconButton variant="outline" onClick={handleAddFriend} className="flex-shrink-0" icon={UserPlus} />
+            <IconButton variant="outline" onClick={handleAddFriend} className="flex-shrink-0" icon={UserPlus} disabled={isLoading} />
           </div>
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         </div>
