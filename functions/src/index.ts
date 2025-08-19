@@ -11,6 +11,57 @@ admin.initializeApp();
 
 const db = admin.firestore();
 
+export const acceptInvite = onCall({region: "europe-west3"}, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "You must be logged in to accept an invite.");
+  }
+
+  const { code } = request.data;
+  if (!code || typeof code !== "string") {
+    throw new HttpsError("invalid-argument", "The function must be called with a valid 'code' argument.");
+  }
+
+  const acceptingUserId = request.auth.uid;
+
+  const invitesRef = db.collection("invites");
+  const q = invitesRef.where("code", "==", code).where("used", "==", false);
+  const querySnapshot = await q.get();
+
+  if (querySnapshot.empty) {
+    throw new HttpsError("not-found", "Invalid or expired invite code.");
+  }
+
+  const inviteDoc = querySnapshot.docs[0];
+  const inviteData = inviteDoc.data();
+
+  if (new Date() > inviteData.expiresAt.toDate()) {
+    throw new HttpsError("deadline-exceeded", "Expired invite code.");
+  }
+
+  if (inviteData.userId === acceptingUserId) {
+    throw new HttpsError("failed-precondition", "You cannot accept your own invite code.");
+  }
+
+  const batch = db.batch();
+
+  // Add each user to the other's friends subcollection
+  const user1Ref = db.collection("users").doc(inviteData.userId);
+  const user2Ref = db.collection("users").doc(acceptingUserId);
+
+  const user1FriendRef = user1Ref.collection("friends").doc(acceptingUserId);
+  batch.set(user1FriendRef, { friendSince: admin.firestore.FieldValue.serverTimestamp() });
+  
+  const user2FriendRef = user2Ref.collection("friends").doc(inviteData.userId);
+  batch.set(user2FriendRef, { friendSince: admin.firestore.FieldValue.serverTimestamp() });
+  
+  // Mark the invite code as used
+  batch.update(inviteDoc.ref, { used: true });
+
+  await batch.commit();
+
+  return { success: true };
+});
+
 /**
  * Notifies all users (except the creator) when a new warp is created.
  */

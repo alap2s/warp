@@ -75,7 +75,9 @@ const DialogHeader = ({ title, children, className }: DialogHeaderProps) => {
         ))}
       </div>
       <div className="flex-shrink-0 flex items-center gap-2">
-        {children}
+        {React.Children.map(children, (child, index) =>
+          React.isValidElement(child) ? React.cloneElement(child, { key: index } as React.Attributes) : child
+        )}
       </div>
     </div>
   );

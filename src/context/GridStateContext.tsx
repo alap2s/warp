@@ -10,12 +10,12 @@ type DialogSize = { width: number, height: number } | null;
 interface GridStateContextType {
   isMakeWarpDialogOpen: boolean;
   isOpenWarpDialogOpen: boolean;
+  isMeDialogOpen: boolean;
   activeWarp: Warp | null;
   warpToEdit: Warp | null;
   isSaving: boolean;
   isLoading: boolean;
   dialogSize: DialogSize;
-  meDialogSize: DialogSize;
   updateAvatarDialogSize: DialogSize;
   centerTileSize: DialogSize;
   warps: Warp[];
@@ -29,9 +29,11 @@ interface GridStateContextType {
   deleteWarp: () => void;
   setActiveWarp: (warp: Warp | null) => void;
   setDialogSize: (size: DialogSize) => void;
-  setMeDialogSize: (size: DialogSize) => void;
+  setMeDialogOpen: (isOpen: boolean) => void;
   setUpdateAvatarDialogSize: (size: DialogSize) => void;
   setCenterTileSize: (size: DialogSize) => void;
+  filter: 'all' | 'friends';
+  setFilter: (filter: 'all' | 'friends') => void;
 }
 
 const GridStateContext = createContext<GridStateContextType | undefined>(undefined);
@@ -44,6 +46,17 @@ export const useGridState = () => {
   return context;
 };
 
+interface GridStateProviderProps {
+  children: ReactNode;
+  warps: Warp[];
+  createWarp: (data: FormData) => Promise<void>;
+  updateWarp: (id: string, data: Partial<FormData>) => Promise<void>;
+  deleteWarp: (id: string) => Promise<void>;
+  isSaving: boolean;
+  filter: 'all' | 'friends';
+  setFilter: (filter: 'all' | 'friends') => void;
+}
+
 export const GridStateProvider = ({ 
   children,
   warps,
@@ -51,21 +64,16 @@ export const GridStateProvider = ({
   updateWarp: updateWarpInDb,
   deleteWarp: removeWarp,
   isSaving,
-}: { 
-  children: ReactNode,
-  warps: Warp[],
-  createWarp: (data: FormData) => Promise<void>,
-  updateWarp: (id: string, data: Partial<FormData>) => Promise<void>,
-  deleteWarp: (id: string) => Promise<void>,
-  isSaving: boolean,
-}) => {
+  filter,
+  setFilter,
+}: GridStateProviderProps) => {
   const [isMakeWarpDialogOpen, setMakeWarpDialogOpen] = useState(false);
   const [isOpenWarpDialogOpen, setOpenWarpDialogOpen] = useState(false);
+  const [isMeDialogOpen, setMeDialogOpen] = useState(false);
   const [activeWarp, setActiveWarp] = useState<Warp | null>(null);
   const [warpToEdit, setWarpToEdit] = useState<Warp | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [dialogSize, setDialogSize] = useState<DialogSize>(null);
-  const [meDialogSize, setMeDialogSize] = useState<DialogSize>(null);
   const [updateAvatarDialogSize, setUpdateAvatarDialogSize] = useState<DialogSize>(null);
   const [centerTileSize, setCenterTileSize] = useState<DialogSize>(null);
 
@@ -77,11 +85,6 @@ export const GridStateProvider = ({
 
   const closeMakeWarpDialog = () => {
     setMakeWarpDialogOpen(false);
-    if (warpToEdit) {
-      setActiveWarp(warpToEdit);
-    } else {
-        playDialogSound('close');
-    }
     setWarpToEdit(null);
     setDialogSize(null);
   };
@@ -137,12 +140,12 @@ export const GridStateProvider = ({
   const value = {
     isMakeWarpDialogOpen,
     isOpenWarpDialogOpen,
+    isMeDialogOpen,
     activeWarp,
     warpToEdit,
     isSaving,
     isLoading,
     dialogSize,
-    meDialogSize,
     updateAvatarDialogSize,
     centerTileSize,
     warps,
@@ -156,9 +159,11 @@ export const GridStateProvider = ({
     deleteWarp,
     setActiveWarp,
     setDialogSize,
-    setMeDialogSize,
+    setMeDialogOpen,
     setUpdateAvatarDialogSize,
     setCenterTileSize,
+    filter,
+    setFilter,
   };
 
   return (

@@ -7,6 +7,12 @@ service cloud.firestore {
       allow create: if request.auth.uid == userId;
       allow update: if request.auth.uid == userId;
       allow delete: if request.auth.uid == userId;
+      
+      match /friends/{friendId} {
+        allow read: if request.auth != null;
+        // Writes are now handled by the acceptInvite Cloud Function
+        allow create, delete: if false;
+      }
     }
 
     match /warps/{warpId} {
@@ -30,6 +36,11 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read, update: if request.auth.uid == resource.data.userId;
       allow create: if request.auth.uid == request.resource.data.actorId;
+    }
+    
+    match /invites/{inviteId} {
+      allow create: if request.auth.uid == request.resource.data.userId;
+      allow read, update: if request.auth != null;
     }
   }
 }

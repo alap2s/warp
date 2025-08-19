@@ -329,24 +329,16 @@ export const MakeWarpDialog = ({
     <Dialog onClose={onClose} onSizeChange={onSizeChange}>
       <DialogHeader title={initialData ? ['Edit'] : ['Make', 'Warp']}>
         {onDelete && (
-          <IconButton variant="outline" onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-            ) : (
-            <Trash2 size={16} strokeWidth={2.25} />
-            )}
-          </IconButton>
+          <IconButton variant="outline" onClick={handleDelete} disabled={isDeleting} icon={Trash2} />
         )}
-          <IconButton variant="outline" onClick={onClose}>
-            <X size={16} strokeWidth={2.25} />
-          </IconButton>
-        <IconButton variant="default" onClick={handlePost}>
-          <Check size={16} strokeWidth={2.25} />
-        </IconButton>
+          <IconButton variant="outline" onClick={onClose} icon={X} />
+        <IconButton variant="default" onClick={handlePost} icon={Check} />
       </DialogHeader>
 
         <Input
           ref={whatInputRef}
+          id="what"
+          name="what"
           placeholder="What?"
           value={whatValue}
           onChange={(e) => setWhatValue(e.target.value)}
@@ -394,6 +386,8 @@ export const MakeWarpDialog = ({
         </div>
 
         <Input
+          id="where"
+          name="where"
           placeholder="Where?"
           value={whereValue}
           onChange={(e) => setWhereValue(e.target.value)}

@@ -8,8 +8,8 @@ const iconButtonVariants = cva(
     variants: {
       variant: {
         default: "bg-white text-black hover:bg-neutral-200",
-        outline: "border-2 border-white/20 bg-black text-white hover:bg-white/10 transition-colors",
-        ghost: "hover:bg-white/10",
+        outline: "border-2 border-white/20 bg-black text-white hover:bg-neutral-900 transition-colors",
+        ghost: "hover:bg-neutral-900",
       },
     },
     defaultVariants: {
@@ -20,16 +20,20 @@ const iconButtonVariants = cva(
 
 export interface IconButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof iconButtonVariants> {}
+    VariantProps<typeof iconButtonVariants> {
+      icon: React.ComponentType<{ size?: number; strokeWidth?: number; }>;
+    }
 
 const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ className, variant, ...props }, ref) => {
+  ({ className, variant, icon: Icon, ...props }, ref) => {
     return (
       <button
         className={cn(iconButtonVariants({ variant, className }))}
         ref={ref}
         {...props}
-      />
+      >
+        <Icon size={16} strokeWidth={2.25} />
+      </button>
     )
   }
 )

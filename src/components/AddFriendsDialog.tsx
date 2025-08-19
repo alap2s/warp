@@ -1,39 +1,98 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Dialog from './ui/Dialog';
 import DialogHeader from './ui/DialogHeader';
-import { Button } from './ui/Button';
-import { Loader2, X, Upload } from 'lucide-react';
+import { X, Upload, Copy, RefreshCw, UserPlus } from 'lucide-react';
 import { IconButton } from './ui/IconButton';
+import { Input } from './ui/Input';
+import { useAuth } from '@/context/AuthContext';
+import { generateInviteCode, acceptInviteCode } from '@/lib/friends';
 
 interface AddFriendsDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  onSizeChange?: (size: { width: number; height: number }) => void;
+  showCloseButton?: boolean;
 }
 
-const AddFriendsDialog = ({ isOpen, onClose }: AddFriendsDialogProps) => {
+const AddFriendsDialog = ({ isOpen, onClose, onSizeChange, showCloseButton = true }: AddFriendsDialogProps) => {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
+  const [friendCode, setFriendCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  const handleShareInvite = async () => {
-    setIsLoading(true);
-    // This is a placeholder.
-    setTimeout(() => {
-      const mockInviteCode = [...Array(16)].map(() => Math.floor(Math.random() * 16).toString(16)).join("");
-      const inviteUrl = `${window.location.origin}/invite/${mockInviteCode}`;
-      setIsLoading(false);
+  const createNewCode = useCallback(async () => {
+    if (user) {
+      const newCode = await generateInviteCode(user.uid);
+      setInviteCode(newCode);
+    }
+  }, [user]);
 
-      if (navigator.share) {
-        navigator.share({
-          title: 'Join me on Dots',
-          text: 'Join me on Dots and lets warp together!',
-          url: inviteUrl,
-        });
+  useEffect(() => {
+    if (isOpen) {
+      createNewCode();
+    }
+  }, [isOpen, createNewCode]);
+
+  // Placeholder functions for button actions
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      alert('Copied to clipboard!'); // Or use a more subtle notification
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+      alert('Failed to copy!');
+    }
+  };
+  const handleRefresh = async () => {
+    await createNewCode();
+  };
+  const handleShare = async () => {
+    const shareData = {
+      title: 'Join me on the Warp!',
+      text: `Here is my friend code: ${inviteCode}`,
+      url: window.location.origin,
+    };
+    try {
+      if (navigator.share && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
       } else {
-        navigator.clipboard.writeText(inviteUrl);
-        alert('Invite link copied to clipboard!');
+        // Fallback for browsers that don't support the share API
+        await navigator.clipboard.writeText(inviteCode);
+        alert('Friend code copied to clipboard!');
       }
-    }, 1000);
+    } catch (err) {
+      console.error('Share failed:', err);
+      alert('Failed to share.');
+    }
+  };
+  const handleAddFriend = async () => {
+    if (!friendCode) {
+      setError('Please enter a friend code.');
+      return;
+    }
+    if (!user) {
+      setError('You must be logged in to add a friend.');
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      await acceptInviteCode(friendCode);
+      alert('Friend added successfully!');
+      setFriendCode('');
+      onClose(); // Close the dialog on success
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message || 'An unknown error occurred.');
+      } else {
+        setError('An unknown error occurred.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!isOpen) {
@@ -41,27 +100,47 @@ const AddFriendsDialog = ({ isOpen, onClose }: AddFriendsDialogProps) => {
   }
 
   return (
-    <Dialog onClose={onClose}>
+    <Dialog onClose={showCloseButton ? onClose : () => {}} onSizeChange={onSizeChange}>
       <DialogHeader title={["Add", "Friends"]}>
-        <IconButton variant="outline" onClick={onClose}>
-            <X size={16} strokeWidth={2.25} />
-        </IconButton>
+        {showCloseButton && <IconButton variant="outline" onClick={onClose} icon={X} />}
       </DialogHeader>
-      <div className="flex flex-col items-center text-left">
-        <p className="text-sm text-gray-400 mb-6">
-          Share this temporary and unique link with your friends to add them on the app.
-        </p>
-        <div className="flex w-full items-center space-x-2">
-            <Button variant="secondary" onClick={handleShareInvite} disabled={isLoading} className="w-full">
-                {isLoading ? (
-                <Loader2 className="animate-spin" />
-                ) : (
-                <>
-                    <Upload size={16} strokeWidth={2.25} className="mr-2" />
-                    Share invite
-                </>
-                )}
-            </Button>
+      <div className="flex flex-col text-left space-y-6">
+        <div>
+          <p className="text-sm text-gray-400 mb-2">
+            Share this one time code with your friends to add them on the app.
+          </p>
+          <div className="flex items-center space-x-2">
+            <Input
+              id="invite-code"
+              name="invite-code"
+              value={inviteCode}
+              disabled
+              className="flex-grow p-3 rounded-lg font-mono text-lg"
+              icon={<RefreshCw size={16} className="text-gray-400" />}
+              onIconClick={handleRefresh}
+            />
+            <IconButton variant="outline" onClick={handleCopy} className="flex-shrink-0" icon={Copy} />
+            <IconButton variant="outline" onClick={handleShare} className="flex-shrink-0" icon={Upload} />
+          </div>
+        </div>
+        <div className="border-t border-gray-700 mt-4"></div>
+        <div>
+          <p className="text-sm text-gray-400 mb-2">
+            Or enter a code a friend shared with you.
+          </p>
+          <div className="flex items-center space-x-2">
+            <Input 
+              id="friend-code"
+              name="friend-code"
+              placeholder="Friend's code" 
+              className="flex-grow p-3 rounded-lg"
+              value={friendCode}
+              onChange={(e) => setFriendCode(e.target.value)}
+              icon={<UserPlus size={16} className="text-gray-400" />}
+            />
+            <IconButton variant="outline" onClick={handleAddFriend} className="flex-shrink-0" icon={UserPlus} disabled={isLoading} />
+          </div>
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         </div>
       </div>
     </Dialog>
