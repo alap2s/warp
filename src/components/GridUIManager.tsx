@@ -15,7 +15,7 @@ import LoadingDialog from './ui/LoadingDialog';
 import { useNotifications } from '@/lib/hooks/useNotifications';
 import { getUsersByIds, updateUserProfile } from '@/lib/user';
 import { markNotificationsAsRead } from '@/lib/warp';
-import type { Warp, UserProfile } from '@/lib/types';
+import type { Warp, UserProfile, FriendActivityTile } from '@/lib/types';
 import { debounce } from 'lodash';
 import { playDialogSound } from '@/lib/audio';
 import { useRouter } from 'next/navigation';
@@ -128,9 +128,26 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
     }
   }, [segmentedControlSelection, friends]);
 
-  const friendsWithoutWarps = useMemo(() => {
-    return friends.filter(friend => !warps.some(warp => warp.ownerId === friend.uid));
-  }, [friends, warps]);
+  const otherWarps = useMemo(() => {
+    return user && profile && warps ? warps.filter(warp => warp.ownerId !== user.uid) : [];
+  }, [user, profile, warps]);
+
+  const tilesToDisplay = useMemo((): FriendActivityTile[] => {
+    if (segmentedControlSelection === 'World') {
+      return otherWarps.map(warp => ({ type: 'warp', data: warp }));
+    }
+
+    // For the 'Friends' tab
+    const friendWarps = warps.filter(warp => warp.ownerId !== user?.uid);
+    const friendsWithWarpsIds = new Set(friendWarps.map(warp => warp.ownerId));
+    const friendsWithoutWarps = friends.filter(friend => !friendsWithWarpsIds.has(friend.uid));
+
+    const warpTiles: FriendActivityTile[] = friendWarps.map(warp => ({ type: 'warp', data: warp }));
+    const friendTiles: FriendActivityTile[] = friendsWithoutWarps.map(friend => ({ type: 'friend', data: friend }));
+
+    return [...warpTiles, ...friendTiles];
+  }, [warps, friends, user, segmentedControlSelection, otherWarps]);
+
 
   React.useEffect(() => {
     const debouncedUpdate = debounce(() => {
@@ -159,11 +176,8 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
     const rows = Math.floor(screenSize.height / (TILE_HEIGHT + GAP));
 
     const newPositions: { [key: string]: { x: number, y: number } } = {};
-    const otherWarps = user ? warps.filter(warp => warp.ownerId !== user.uid) : warps;
 
-    const tilesToPosition: (Warp | UserProfile)[] = segmentedControlSelection === 'World'
-      ? otherWarps
-      : [...warps, ...friendsWithoutWarps];
+    const tilesToPosition = tilesToDisplay;
 
     let tileIndex = 0;
 
@@ -177,7 +191,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
         const y = (screenSize.height / 2) + row * (TILE_HEIGHT + GAP) - (TILE_HEIGHT / 2);
         if (x >= 0 && x <= screenSize.width - TILE_WIDTH && y >= 0 && y <= screenSize.height - TILE_HEIGHT) {
           const tile = tilesToPosition[tileIndex];
-          const tileId = 'id' in tile ? tile.id : tile.uid;
+          const tileId = tile.type === 'warp' ? tile.data.id : tile.data.uid;
           newPositions[tileId] = { x, y };
           tileIndex++;
         }
@@ -191,7 +205,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
           const y = (screenSize.height / 2) + row * (TILE_HEIGHT + GAP) - (TILE_HEIGHT / 2);
           if (x >= 0 && x <= screenSize.width - TILE_WIDTH && y >= 0 && y <= screenSize.height - TILE_HEIGHT) {
             const tile = tilesToPosition[tileIndex];
-            const tileId = 'id' in tile ? tile.id : tile.uid;
+            const tileId = tile.type === 'warp' ? tile.data.id : tile.data.uid;
             newPositions[tileId] = { x, y };
             tileIndex++;
           }
@@ -202,7 +216,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
           const y = (screenSize.height / 2) + row * (TILE_HEIGHT + GAP) - (TILE_HEIGHT / 2);
           if (x >= 0 && x <= screenSize.width - TILE_WIDTH && y >= 0 && y <= screenSize.height - TILE_HEIGHT) {
             const tile = tilesToPosition[tileIndex];
-            const tileId = 'id' in tile ? tile.id : tile.uid;
+            const tileId = tile.type === 'warp' ? tile.data.id : tile.data.uid;
             newPositions[tileId] = { x, y };
             tileIndex++;
           }
@@ -212,7 +226,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
 
     setWarpPositions(newPositions);
     
-  }, [warps, user, screenSize, segmentedControlSelection, friends, friendsWithoutWarps]);
+  }, [tilesToDisplay, user, screenSize, segmentedControlSelection, friends]);
 
   React.useEffect(() => {
 
@@ -288,12 +302,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   } : null;
   
   const myWarp = user && warps ? warps.find(warp => warp.ownerId === user.uid) : null;
-  const otherWarps = user && profile && warps ? warps.filter(warp => warp.ownerId !== user.uid) : [];
-
-  const tilesToDisplay = segmentedControlSelection === 'World'
-    ? otherWarps
-    : [...warps, ...friendsWithoutWarps];
-
+  
   if (isPreview) {
     if (!sharedWarp) {
         return <LoadingDialog />; // Or some other placeholder
@@ -384,14 +393,14 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
       {/* Render all other warps on the grid */}
       <AnimatePresence key={segmentedControlSelection}>
         {showTiles && profile && tilesToDisplay.map(tile => {
-          if (activeWarp && 'id' in tile && activeWarp.id === tile.id) return null;
-          if ('ownerId' in tile && tile.ownerId === user?.uid) return null;
+          if (activeWarp && tile.type === 'warp' && activeWarp.id === tile.data.id) return null;
+          if (tile.type === 'warp' && tile.data.ownerId === user?.uid) return null;
           
-          const position = warpPositions['id' in tile ? tile.id : tile.uid];
+          const position = warpPositions[tile.type === 'warp' ? tile.data.id : tile.data.uid];
           if (!position) return null;
 
-          if ('id' in tile) { // It's a Warp
-            const warp = tile;
+          if (tile.type === 'warp') { // It's a Warp
+            const warp = tile.data;
             return (
               <WarpTile
                 key={warp.id}
@@ -408,7 +417,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
               />
             );
           } else { // It's a Friend
-            const friend = tile;
+            const friend = tile.data;
             return (
               <FriendTile
                 key={friend.uid}
