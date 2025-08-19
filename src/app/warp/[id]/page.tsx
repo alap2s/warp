@@ -55,7 +55,8 @@ const WarpLoader = () => {
 
 
 const SharedWarpApp = () => {
-  const { warps, saving, createWarp, updateWarp, deleteWarp } = useWarps();
+  const [filter, setFilter] = useState<'all' | 'friends'>('all');
+  const { warps, saving, createWarp, updateWarp, deleteWarp } = useWarps({ filter });
 
   return (
     <GridStateProvider
@@ -64,6 +65,8 @@ const SharedWarpApp = () => {
       updateWarp={updateWarp}
       deleteWarp={deleteWarp}
       isSaving={saving}
+      filter={filter}
+      setFilter={setFilter}
     >
       <GridCanvas />
       <WarpLoader />
