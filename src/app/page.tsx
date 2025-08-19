@@ -137,7 +137,9 @@ const AppContent = () => {
 };
 
 const HomeApp = () => {
-  const { warps, saving, createWarp, updateWarp, deleteWarp } = useWarps();
+  const [filter, setFilter] = useState<'all' | 'friends'>('all');
+  const { warps, saving, createWarp, updateWarp, deleteWarp } = useWarps({ filter });
+
   return (
     <GridStateProvider
       warps={warps}
@@ -145,6 +147,8 @@ const HomeApp = () => {
       updateWarp={updateWarp}
       deleteWarp={deleteWarp}
       isSaving={saving}
+      filter={filter}
+      setFilter={setFilter}
     >
       <Suspense fallback={<div className="w-screen h-screen bg-black" />}>
         <AppContent />

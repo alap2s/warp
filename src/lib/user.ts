@@ -41,7 +41,7 @@ export const getUsersByIds = async (uids: string[]) => {
   const querySnapshot = await getDocs(q);
     const users: { [key: string]: UserProfile } = {};
   querySnapshot.forEach((doc) => {
-      users[doc.id] = doc.data() as UserProfile;
+      users[doc.id] = { ...doc.data(), uid: doc.id } as UserProfile;
   });
   return users;
   } catch (error) {

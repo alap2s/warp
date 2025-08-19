@@ -1,6 +1,7 @@
 import { Timestamp } from "firebase/firestore";
 
 export interface UserProfile {
+  uid: string;
   username: string;
   icon: string;
   photoURL?: string;

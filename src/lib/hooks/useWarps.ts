@@ -7,12 +7,27 @@ import { FormData } from '@/components/MakeWarpDialog';
 import { getUsersByIds } from '@/lib/user';
 import { Warp } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
+import { onFriendsUpdate } from '@/lib/friends';
 
-export const useWarps = () => {
+interface UseWarpsOptions {
+  filter?: 'all' | 'friends';
+}
+
+export const useWarps = (options: UseWarpsOptions = { filter: 'all' }) => {
   const { user, profile } = useAuth();
   const [warps, setWarps] = useState<Warp[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [friendIds, setFriendIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (user && options.filter === 'friends') {
+      const unsubscribe = onFriendsUpdate(user.uid, (friends) => {
+        setFriendIds(friends.map(f => f.uid));
+      });
+      return unsubscribe;
+    }
+  }, [user, options.filter]);
 
   useEffect(() => {
     if (!user) {
@@ -23,10 +38,21 @@ export const useWarps = () => {
 
     setLoading(true);
     const unsubscribe = subscribeToWarps(async (allWarps) => {
-      if (allWarps.length > 0) {
-        const ownerIds = [...new Set(allWarps.map(warp => warp.ownerId))].filter(Boolean) as string[];
+      let warpsToProcess = allWarps;
+
+      if (options.filter === 'friends') {
+        if (friendIds.length > 0 || user) {
+          warpsToProcess = allWarps.filter(warp => friendIds.includes(warp.ownerId) || warp.ownerId === user?.uid);
+        } else {
+          // If friends filter is on but there are no friends, show no warps.
+          warpsToProcess = [];
+        }
+      }
+      
+      if (warpsToProcess.length > 0) {
+        const ownerIds = [...new Set(warpsToProcess.map(warp => warp.ownerId))].filter(Boolean) as string[];
         const users = await getUsersByIds(ownerIds);
-        const warpsWithUser = allWarps.map(warp => ({ ...warp, user: users[warp.ownerId] }));
+        const warpsWithUser = warpsToProcess.map(warp => ({ ...warp, user: users[warp.ownerId] }));
         setWarps(warpsWithUser);
       } else {
         setWarps([]);
@@ -35,7 +61,7 @@ export const useWarps = () => {
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, options.filter, friendIds]);
 
   const createWarp = async (data: Omit<FormData, 'icon'> & { icon: string }) => {
     if (!user || !profile) return;
@@ -59,6 +85,7 @@ export const useWarps = () => {
       user: {
         username: profile.username,
         icon: profile.icon,
+        uid: user.uid,
       },
       coordinates: data.coordinates || undefined,
     };

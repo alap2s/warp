@@ -1,31 +1,33 @@
 'use client';
 
 import React from 'react';
+import { UserProfile } from '@/lib/types';
 import { motion } from 'framer-motion';
 import DynamicIcon from './ui/DynamicIcon';
 
 interface FriendTileProps {
-  username: string;
-  position?: { x: number, y: number };
+  friend: UserProfile;
+  position?: { x: number; y: number };
+  onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 const FriendTile = React.forwardRef<HTMLDivElement, FriendTileProps>(({ 
-  username,
+  friend, 
   position,
+  onClick,
 }, ref) => {
 
   const tileContent = (
     <div 
-      className="w-[84px] h-[84px] bg-black border-2 rounded-[24px] p-2 flex flex-col items-center justify-center gap-1 border-white/20 opacity-50"
+      className="w-[84px] h-[84px] bg-black border-2 border-white/40 rounded-[24px] p-2 flex flex-col items-center justify-center gap-1 cursor-pointer"
+      onClick={onClick}
     >
-      <div className="flex-grow flex items-center justify-center">
-        <DynamicIcon name="user" className="w-8 h-8 text-white" />
+      <div className="w-5 h-5 text-white/70">
+        <DynamicIcon name="User" size={20} />
       </div>
-      <div className="flex flex-col items-center text-center">
-        <p className="text-white text-xs font-medium truncate w-full">{username}</p>
-        <p className="text-white/70 text-[10px] font-light w-full truncate">
-          No warp yet
-        </p>
+      <div className="flex flex-col items-center justify-center text-center gap-1">
+        <p className="text-white/70 text-xs font-medium truncate w-full">{friend.username}</p>
+        <p className="text-white/70 text-[10px] font-light w-full truncate">Idle</p>
       </div>
     </div>
   );

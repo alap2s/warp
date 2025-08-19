@@ -20,6 +20,10 @@ import { debounce } from 'lodash';
 import { playDialogSound } from '@/lib/audio';
 import { useRouter } from 'next/navigation';
 import AddFriendsDialog from './AddFriendsDialog';
+import { onFriendsUpdate } from '@/lib/friends';
+import FriendTile from './FriendTile';
+import { UserPlus } from 'lucide-react';
+import { IconButton } from './ui/IconButton';
 
 const CreateWarpTile = React.forwardRef<HTMLDivElement, { onClick: () => void, onSizeChange?: (size: { width: number, height: number } | null) => void }>(({ onClick, onSizeChange }, ref) => {
   useLayoutEffect(() => {
@@ -70,6 +74,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   const { 
     isMakeWarpDialogOpen, 
     isOpenWarpDialogOpen,
+    isMeDialogOpen,
     activeWarp, 
     setActiveWarp, 
     warpToEdit, 
@@ -82,18 +87,20 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
     openWarpDialog,
     closeWarpDialog,
     setDialogSize, 
-    setMeDialogSize, 
+    setMeDialogOpen,
     setUpdateAvatarDialogSize,
-    meDialogSize,
     isLoading,
     warps,
     setCenterTileSize,
+    filter,
+    setFilter,
   } = useGridState();
   const centerTileRef = React.useRef<HTMLDivElement>(null);
   const [isPreparingWarp, setIsPreparingWarp] = React.useState(false);
   const [participantProfiles, setParticipantProfiles] = React.useState<UserProfile[]>([]);
   const [isUpdatingAvatar, setUpdatingAvatar] = React.useState(false);
   const [isAddFriendsDialogOpen, setAddFriendsDialogOpen] = React.useState(false);
+  const [friends, setFriends] = React.useState<UserProfile[]>([]);
   const [segmentedControlSelection, setSegmentedControlSelection] = React.useState('World');
   const [warpPositions, setWarpPositions] = React.useState<{ [key: string]: { x: number, y: number } }>({});
   const [screenSize, setScreenSize] = React.useState({ width: 0, height: 0 });
@@ -106,6 +113,21 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
       setSharedWarpHandled(true);
     }
   }, [sharedWarp, isPreview, setActiveWarp, openWarpDialog, sharedWarpHandled]);
+
+  React.useEffect(() => {
+    if (user?.uid) {
+      const unsubscribe = onFriendsUpdate(user.uid, setFriends);
+      return () => unsubscribe();
+    }
+  }, [user?.uid]);
+
+  React.useEffect(() => {
+    if (segmentedControlSelection === 'Friends' && friends.length === 0) {
+      setAddFriendsDialogOpen(true);
+    } else {
+      setAddFriendsDialogOpen(false);
+    }
+  }, [segmentedControlSelection, friends]);
 
   React.useEffect(() => {
     const debouncedUpdate = debounce(() => {
@@ -135,55 +157,59 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
 
     const newPositions: { [key: string]: { x: number, y: number } } = {};
     const otherWarps = user ? warps.filter(warp => warp.ownerId !== user.uid) : warps;
-    let warpIndex = 0;
-    
-    // Loop outwards from the center row
-    for (let j = 0; warpIndex < otherWarps.length && j < rows; j++) {
+
+    const tilesToPosition: (Warp | UserProfile)[] = segmentedControlSelection === 'World'
+      ? otherWarps
+      : [...warps, ...friendsWithoutWarps];
+
+    let tileIndex = 0;
+
+    for (let j = 0; tileIndex < tilesToPosition.length && j < rows; j++) {
       const row = (j % 2 === 0) ? (j / 2) : -(Math.ceil(j / 2));
       const isStaggered = Math.abs(row) % 2 !== 0;
 
-      // Even rows (0, 2, -2...) have a center tile (except for row 0)
       if (!isStaggered && row !== 0) {
-        if (warpIndex >= otherWarps.length) break;
+        if (tileIndex >= tilesToPosition.length) break;
         const x = (screenSize.width / 2) - (TILE_WIDTH / 2);
         const y = (screenSize.height / 2) + row * (TILE_HEIGHT + GAP) - (TILE_HEIGHT / 2);
         if (x >= 0 && x <= screenSize.width - TILE_WIDTH && y >= 0 && y <= screenSize.height - TILE_HEIGHT) {
-          const warp = otherWarps[warpIndex];
-          newPositions[warp.id] = { x, y };
-          warpIndex++;
+          const tile = tilesToPosition[tileIndex];
+          const tileId = 'id' in tile ? tile.id : tile.uid;
+          newPositions[tileId] = { x, y };
+          tileIndex++;
         }
       }
 
-      for (let i = 1; warpIndex < otherWarps.length && i < cols / 2; i++) {
+      for (let i = 1; tileIndex < tilesToPosition.length && i < cols / 2; i++) {
         const colOffset = isStaggered ? (i - 0.5) : i;
 
-        // Add tile to the right
-        if (warpIndex < otherWarps.length) {
+        if (tileIndex < tilesToPosition.length) {
           const x = (screenSize.width / 2) + colOffset * (TILE_WIDTH + GAP) - (TILE_WIDTH / 2);
           const y = (screenSize.height / 2) + row * (TILE_HEIGHT + GAP) - (TILE_HEIGHT / 2);
           if (x >= 0 && x <= screenSize.width - TILE_WIDTH && y >= 0 && y <= screenSize.height - TILE_HEIGHT) {
-            const warp = otherWarps[warpIndex];
-            newPositions[warp.id] = { x, y };
-            warpIndex++;
+            const tile = tilesToPosition[tileIndex];
+            const tileId = 'id' in tile ? tile.id : tile.uid;
+            newPositions[tileId] = { x, y };
+            tileIndex++;
           }
         }
-        
-        // Add tile to the left
-        if (warpIndex < otherWarps.length) {
+
+        if (tileIndex < tilesToPosition.length) {
           const x = (screenSize.width / 2) - colOffset * (TILE_WIDTH + GAP) - (TILE_WIDTH / 2);
           const y = (screenSize.height / 2) + row * (TILE_HEIGHT + GAP) - (TILE_HEIGHT / 2);
           if (x >= 0 && x <= screenSize.width - TILE_WIDTH && y >= 0 && y <= screenSize.height - TILE_HEIGHT) {
-            const warp = otherWarps[warpIndex];
-            newPositions[warp.id] = { x, y };
-            warpIndex++;
+            const tile = tilesToPosition[tileIndex];
+            const tileId = 'id' in tile ? tile.id : tile.uid;
+            newPositions[tileId] = { x, y };
+            tileIndex++;
           }
         }
       }
     }
-    
+
     setWarpPositions(newPositions);
     
-  }, [warps, user, screenSize]);
+  }, [warps, user, screenSize, segmentedControlSelection, friends]);
 
   React.useEffect(() => {
 
@@ -217,7 +243,9 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   }, [warps, activeWarp, setActiveWarp]);
 
   const shouldHideNavBar = isMakeWarpDialogOpen || isOpenWarpDialogOpen || isUpdatingAvatar;
-  const showTiles = !isMakeWarpDialogOpen && !isOpenWarpDialogOpen && !meDialogSize && !isUpdatingAvatar && !isPreview;
+  const anyDialogOpen = isMakeWarpDialogOpen || isOpenWarpDialogOpen || isUpdatingAvatar || isMeDialogOpen || isAddFriendsDialogOpen;
+  const showTiles = !anyDialogOpen && !isPreview;
+
 
   const handleAvatarSave = async (newIcon: string) => {
     if (user) {
@@ -226,7 +254,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
     }
     setUpdatingAvatar(false);
     setUpdateAvatarDialogSize(null);
-    setMeDialogSize({ width: 300, height: 557 });
+    setMeDialogOpen(true);
   };
 
   const handleUpdateProfile = async (data: Partial<UserProfile>) => {
@@ -258,6 +286,11 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   
   const myWarp = user && warps ? warps.find(warp => warp.ownerId === user.uid) : null;
   const otherWarps = user && profile && warps ? warps.filter(warp => warp.ownerId !== user.uid) : [];
+  const friendsWithoutWarps = friends.filter(friend => !warps.some(warp => warp.ownerId === friend.uid));
+
+  const tilesToDisplay = segmentedControlSelection === 'World'
+    ? otherWarps
+    : [...warps, ...friendsWithoutWarps];
 
   if (isPreview) {
     if (!sharedWarp) {
@@ -290,7 +323,20 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
             onSizeChange={setDialogSize}
           />
         )}
-        {profile && <AddFriendsDialog key="add-friends" isOpen={isAddFriendsDialogOpen} onClose={() => setAddFriendsDialogOpen(false)} />}
+        {profile && <AddFriendsDialog
+            key="add-friends"
+            isOpen={isAddFriendsDialogOpen}
+            onClose={() => {
+              setAddFriendsDialogOpen(false)
+              setDialogSize(null);
+              if (friends.length === 0) {
+                setSegmentedControlSelection('World');
+              }
+            }}
+            showCloseButton={friends.length > 0}
+            onSizeChange={setDialogSize}
+          />}
+
         {profile && isOpenWarpDialogOpen && activeWarp && (
 
           isPreparingWarp ? (
@@ -311,23 +357,6 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
               }}
             />
           )
-        )}
-      </AnimatePresence>
-      
-      <AnimatePresence>
-        {/* Render the active warp (from another user) in the center */}
-        {profile && activeWarp && !isOpenWarpDialogOpen && (
-          <WarpTile
-            ref={centerTileRef}
-            key={activeWarp.id}
-            warp={activeWarp}
-            username={activeWarp.user?.username || '...'}
-            onClick={() => handleWarpClick(activeWarp)}
-            isNew={notifications.some(n => n.warpId === activeWarp.id && n.type === 'new_warp')}
-            joinerCount={notifications.filter(n => n.warpId === activeWarp.id && n.type === 'warp_join').length}
-            participantCount={Math.max(0, activeWarp.participants.length)}
-            onSizeChange={setCenterTileSize}
-          />
         )}
       </AnimatePresence>
 
@@ -351,47 +380,71 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
       )}
 
       {/* Render all other warps on the grid */}
-      {showTiles && profile && otherWarps.map(warp => {
-        // Hide the tile if it's the currently active one (since it's in the center)
-        if (activeWarp && activeWarp.id === warp.id) return null;
-        //const IconComponent = getIcon(warp.icon);
-        const position = warpPositions[warp.id];
-        return (
-          position && (
-            <WarpTile
-              key={warp.id}
-              warp={warp}
-              username={warp.user?.username || '...'}
-              position={position}
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation(); // Prevent the grid click from firing
-                handleWarpClick(warp);
-              }}
-              isNew={notifications.some(n => n.warpId === warp.id && n.type === 'new_warp')}
-              joinerCount={notifications.filter(n => n.warpId === warp.id && n.type === 'warp_join').length}
-              participantCount={Math.max(0, warp.participants.length)}
-            />
-          )
-        );
-      })}
+      <AnimatePresence key={segmentedControlSelection}>
+        {showTiles && profile && tilesToDisplay.map(tile => {
+          if (activeWarp && 'id' in tile && activeWarp.id === tile.id) return null;
+          if ('ownerId' in tile && tile.ownerId === user?.uid) return null;
+          
+          const position = warpPositions['id' in tile ? tile.id : tile.uid];
+          if (!position) return null;
+
+          if ('id' in tile) { // It's a Warp
+            const warp = tile;
+            return (
+              <WarpTile
+                key={warp.id}
+                warp={warp}
+                username={warp.user?.username || '...'}
+                position={position}
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation(); // Prevent the grid click from firing
+                  handleWarpClick(warp);
+                }}
+                isNew={notifications.some(n => n.warpId === warp.id && n.type === 'new_warp')}
+                joinerCount={notifications.filter(n => n.warpId === warp.id && n.type === 'warp_join').length}
+                participantCount={Math.max(0, warp.participants.length)}
+              />
+            );
+          } else { // It's a Friend
+            const friend = tile;
+            return (
+              <FriendTile
+                key={friend.uid}
+                friend={friend}
+                position={position}
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                }}
+              />
+            );
+          }
+        })}
+      </AnimatePresence>
+
+      {segmentedControlSelection === 'Friends' && friends.length > 0 && showTiles && (
+        <div className="absolute top-4 right-4 z-50">
+          <IconButton variant="outline" onClick={() => setAddFriendsDialogOpen(true)} icon={UserPlus} />
+        </div>
+      )}
 
       {profile && (
         <AnimatePresence>
-          {meDialogSize && (
+          {isMeDialogOpen && (
             <MeDialog
               key={profile.icon}
               userProfile={profile}
               onClose={() => {
-                setMeDialogSize(null)
+                setMeDialogOpen(false);
+                setDialogSize(null);
                 setSegmentedControlSelection('World');
                 playDialogSound('close');
               }}
-              onSizeChange={setMeDialogSize}
+              onSizeChange={setDialogSize}
               onUpdateAvatar={() => {
-                setMeDialogSize(null);
+                setMeDialogOpen(false);
                 setUpdatingAvatar(true);
               }}
-              onDeleteAccount={() => setMeDialogSize(null)}
+              onDeleteAccount={() => setMeDialogOpen(false)}
               onUpdateProfile={handleUpdateProfile}
             />
           )}
@@ -403,39 +456,39 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
           onSave={handleAvatarSave}
           onClose={() => {
             setUpdatingAvatar(false);
-            setMeDialogSize({ width: 300, height: 557 });
+            setMeDialogOpen(true);
             setUpdateAvatarDialogSize(null);
           }}
           onSizeChange={setUpdateAvatarDialogSize}
         />
       )}
-      <AnimatePresence>
         {profile && !shouldHideNavBar && (
-          <motion.div
-            className="absolute bottom-[40px] left-1/2 -translate-x-1/2 z-50"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-          >
-            <NavBar
-              options={[{ label: 'World' }, { label: 'Friends' }, { label: 'Settings' }]}
-              value={segmentedControlSelection}
-              onSelect={(option) => {
-                setSegmentedControlSelection(option);
-                if (option === 'Settings') {
-                  playDialogSound('open');
-                  setMeDialogSize({ width: 300, height: 557 });
-                } else if (option === 'Friends') {
+          <NavBar
+            options={[{ label: 'World' }, { label: 'Friends' }, { label: 'Settings' }]}
+            value={segmentedControlSelection}
+            onSelect={(option) => {
+              setActiveWarp(null);
+              setSegmentedControlSelection(option);
+              if (option === 'Settings') {
+                playDialogSound('open');
+                setMeDialogOpen(true);
+              } else if (option === 'Friends') {
+                setFilter('friends');
+                if (friends.length === 0) {
                   setAddFriendsDialogOpen(true);
                 } else {
-                  setMeDialogSize(null);
+                  setDialogSize(null);
                 }
-              }}
-            />
-          </motion.div>
+                setMeDialogOpen(false);
+              } else {
+                setFilter('all');
+                setAddFriendsDialogOpen(false);
+                setMeDialogOpen(false);
+                setDialogSize(null);
+              }
+            }}
+          />
         )}
-      </AnimatePresence>
     </div>
   );
 };

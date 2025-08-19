@@ -1,18 +1,26 @@
-import { db } from './firebase';
-import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, writeBatch } from 'firebase/firestore';
+import { db, functions } from './firebase';
+import { collection, addDoc, serverTimestamp, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, writeBatch, onSnapshot } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { UserProfile } from './types';
 
 /**
- * Generates a unique 8-character hexadecimal invite code.
- * This is a placeholder and should be replaced with a more robust
- * and secure method for a production environment.
+ * Generates a unique 8-character hexadecimal invite code that is not currently in use.
  * @param userId The ID of the user generating the code.
  * @returns A promise that resolves to the generated invite code.
  */
 export const generateInviteCode = async (userId: string): Promise<string> => {
-  // Generate a random 8-character hex string
-  const code = [...Array(8)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+  let code: string = '';
+  let isUnique = false;
   
+  while (!isUnique) {
+    code = [...Array(8)].map(() => Math.floor(Math.random() * 16).toString(16)).join('');
+    const q = query(collection(db, 'invites'), where('code', '==', code));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+      isUnique = true;
+    }
+  }
+
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
 
   await addDoc(collection(db, 'invites'), {
@@ -25,44 +33,16 @@ export const generateInviteCode = async (userId: string): Promise<string> => {
   return code;
 };
 
-export const acceptInviteCode = async (code: string, acceptingUserId: string): Promise<void> => {
-  const invitesRef = collection(db, 'invites');
-  const q = query(invitesRef, where('code', '==', code), where('used', '==', false));
-  const querySnapshot = await getDocs(q);
-
-  if (querySnapshot.empty) {
-    throw new Error('Invalid or expired invite code.');
+export const acceptInviteCode = async (code: string): Promise<void> => {
+  try {
+    const acceptInviteFunction = httpsCallable(functions, 'acceptInvite');
+    await acceptInviteFunction({ code });
+  } catch (error: any) {
+    // It's good practice to re-throw a more user-friendly error
+    // or an error that's consistent with your app's error handling.
+    console.error("Error calling acceptInvite function:", error);
+    throw new Error(error.message || 'Failed to accept invite code.');
   }
-
-  const inviteDoc = querySnapshot.docs[0];
-  const inviteData = inviteDoc.data();
-
-  if (new Date() > inviteData.expiresAt.toDate()) {
-    throw new Error('Expired invite code.');
-  }
-
-  if (inviteData.userId === acceptingUserId) {
-    throw new Error('You cannot accept your own invite code.');
-  }
-
-  const batch = writeBatch(db);
-
-  // Add each user to the other's friends list
-  const user1Ref = doc(db, 'users', inviteData.userId);
-  const user2Ref = doc(db, 'users', acceptingUserId);
-
-  // Assuming 'friends' is a subcollection. Let's add a document to it.
-  // This is more scalable than an array of friend IDs.
-  const user1FriendRef = doc(collection(user1Ref, 'friends'), acceptingUserId);
-  batch.set(user1FriendRef, { friendSince: serverTimestamp() });
-  
-  const user2FriendRef = doc(collection(user2Ref, 'friends'), inviteData.userId);
-  batch.set(user2FriendRef, { friendSince: serverTimestamp() });
-  
-  // Mark the invite code as used
-  batch.update(inviteDoc.ref, { used: true });
-
-  await batch.commit();
 };
 
 export const getFriends = async (userId: string): Promise<UserProfile[]> => {
@@ -75,11 +55,23 @@ export const getFriends = async (userId: string): Promise<UserProfile[]> => {
     return [];
   }
 
-  const usersRef = collection(db, 'users');
-  const q = query(usersRef, where('uid', 'in', friendIds));
-  const usersSnapshot = await getDocs(q);
+  // Firestore 'in' queries are limited to 10 items. We need to handle more.
+  const friendProfiles: UserProfile[] = [];
+  const chunks = [];
+  for (let i = 0; i < friendIds.length; i += 10) {
+    chunks.push(friendIds.slice(i, i + 10));
+  }
+
+  for (const chunk of chunks) {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('uid', 'in', chunk));
+    const usersSnapshot = await getDocs(q);
+    usersSnapshot.forEach(doc => {
+      friendProfiles.push({ uid: doc.id, ...doc.data() } as UserProfile);
+    });
+  }
   
-  return usersSnapshot.docs.map(doc => doc.data() as UserProfile);
+  return friendProfiles;
 };
 
 export const onFriendsUpdate = (userId: string, callback: (friends: UserProfile[]) => void) => {
