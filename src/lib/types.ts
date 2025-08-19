@@ -16,6 +16,7 @@ export interface Warp {
   icon: string;
   ownerId: string;
   participants: string[];
+  type: 'public' | 'friends';
   user?: UserProfile;
   coordinates?: {
     lat: number;

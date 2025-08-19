@@ -16,10 +16,14 @@ service cloud.firestore {
     }
 
     match /warps/{warpId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && 
+                      (resource.data.type == 'public' || !(resource.data.keys().hasAll(['type']))) ||
+                       resource.data.ownerId == request.auth.uid ||
+                       exists(/databases/$(database)/documents/users/$(request.auth.uid)/friends/$(resource.data.ownerId));
       
       allow create: if request.auth.uid == request.resource.data.ownerId
-                      && request.resource.data.participants == [];
+                      && request.resource.data.participants == []
+                      && (request.resource.data.type == 'public' || request.resource.data.type == 'friends');
 
       allow update: if request.auth.uid == resource.data.ownerId || 
                        (request.auth.uid != resource.data.ownerId &&

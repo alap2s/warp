@@ -8,13 +8,14 @@ import {
   Book, Mic, Film, Music, ShoppingCart, Utensils, Beer, Dumbbell, Sun, Moon,
   Wine, Sofa, Tv2, Home, PartyPopper, Palette, CakeSlice, CupSoda, Trophy,
   Gamepad2, Bike, HeartPulse, Swords, Play, Sailboat, Ship, Dices, Trash2, Tag, Link2, Loader2,
-  MapPinCheckInside, MapPinXInside
+  MapPinCheckInside, MapPinXInside, Eye, EyeOff
 } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import DialogHeader from './ui/DialogHeader';
 import { getCurrentCoordinates, getAddressFromCoordinates, getCoordinatesFromAddress } from '@/lib/location';
 import { getIconName } from '@/lib/icon-map';
 import DynamicIcon from './ui/DynamicIcon';
+import SegmentedControl from './ui/SegmentedControl';
 
 interface IconProps {
   className?: string;
@@ -143,6 +144,7 @@ export type FormData = {
   when: Date;
   where: string;
   icon: string;
+  type: 'public' | 'friends';
   coordinates?: {
     lat: number;
     lng: number;
@@ -165,6 +167,7 @@ export const MakeWarpDialog = ({
     when: Date;
     where: string;
     icon: string;
+    type?: 'public' | 'friends';
   } | null,
   onDelete?: () => void,
   onSizeChange?: (size: { width: number, height: number }) => void,
@@ -179,6 +182,7 @@ export const MakeWarpDialog = ({
   const [foundLocationName, setFoundLocationName] = useState<string | null>(null);
   const [currentIconName, setCurrentIconName] = useState<string>(initialData?.icon || 'line-squiggle');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [warpType, setWarpType] = useState<'public' | 'friends'>(initialData?.type || 'public');
 
   useEffect(() => {
     if (!initialData) {
@@ -274,6 +278,7 @@ export const MakeWarpDialog = ({
       when: whenValue,
       where: whereValue,
       icon: currentIconName,
+      type: warpType,
       coordinates: coordinates,
     };
     if (initialData) {
@@ -410,6 +415,14 @@ export const MakeWarpDialog = ({
               </div>
             )
           }
+        />
+        <SegmentedControl
+            options={[
+                { label: 'Public', icon: Eye },
+                { label: 'Friends only', icon: EyeOff },
+            ]}
+            value={warpType === 'public' ? 'Public' : 'Friends only'}
+            onSelect={(label) => setWarpType(label === 'Public' ? 'public' : 'friends')}
         />
     </Dialog>
   );
