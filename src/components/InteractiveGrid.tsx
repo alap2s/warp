@@ -22,7 +22,7 @@ interface DialogBumpConfig {
   dialogBumpScale: number;
 }
 
-const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, warpTileRect, profileDialogRect, segmentedControlRect, meDialogRect, centerTileRect, dialogBumpConfig }: {
+const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, warpTileRect, profileDialogRect, segmentedControlRect, centerTileRect, dialogBumpConfig }: {
   isPointerDown: boolean,
   pointerPos: THREE.Vector3,
   bumpStrength: SpringValue,
@@ -30,7 +30,6 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   warpTileRect: Rect | null,
   profileDialogRect: Rect | null,
   segmentedControlRect: Rect | null,
-  meDialogRect: Rect | null,
   centerTileRect: Rect | null,
   dialogBumpConfig: DialogBumpConfig,
 }) => {
@@ -41,7 +40,6 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   const prevWarpTileRect = useRef(warpTileRect);
   const prevProfileDialogRect = useRef(profileDialogRect);
   const prevSegmentedControlRect = useRef(segmentedControlRect);
-  const prevMeDialogRect = useRef(meDialogRect);
   const prevCenterTileRect = useRef(centerTileRect);
 
   const originalPositions = useRef<Float32Array | null>(null);
@@ -50,7 +48,6 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   const { val: centerTileBumpStrength } = useSpring({ val: 0 });
   const { val: profileDialogBumpStrength } = useSpring({ val: 0 });
   const { val: segmentedControlBumpStrength } = useSpring({ val: 0 });
-  const { val: meDialogBumpStrength } = useSpring({ val: 0 });
 
   useEffect(() => {
     dialogBumpStrength.start(dialogRect ? dialogBumpConfig.dialogBumpStrength : 0);
@@ -71,10 +68,6 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   useEffect(() => {
     segmentedControlBumpStrength.start(segmentedControlRect ? -0.2 : 0);
   }, [segmentedControlRect, segmentedControlBumpStrength]);
-
-  useEffect(() => {
-    meDialogBumpStrength.start(meDialogRect ? dialogBumpConfig.dialogBumpStrength : 0);
-  }, [meDialogRect, meDialogBumpStrength, dialogBumpConfig.dialogBumpStrength]);
 
   const texture = useMemo(() => {
     const size = 256;
@@ -122,8 +115,6 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
     const isTile = !!warpTileRect;
     const wasProfile = !!prevProfileDialogRect.current;
     const isProfile = !!profileDialogRect;
-    const wasMe = !!prevMeDialogRect.current;
-    const isMe = !!meDialogRect;
     const wasCenterTile = !!prevCenterTileRect.current;
     const isCenterTile = !!centerTileRect;
 
@@ -159,13 +150,6 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
           rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect, isOpening };
         }
       }
-      else if (wasMe !== isMe) {
-        const isOpening = isMe;
-        const rect = isOpening ? meDialogRect : prevMeDialogRect.current;
-        if (rect) {
-          rippleRef.current = { active: true, startTime: clock.getElapsedTime(), rect, isOpening };
-        }
-      }
       else if (wasCenterTile !== isCenterTile) {
         const isOpening = isCenterTile;
         const rect = isOpening ? centerTileRect : prevCenterTileRect.current;
@@ -179,7 +163,6 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
     prevWarpTileRect.current = warpTileRect;
     prevProfileDialogRect.current = profileDialogRect;
     prevSegmentedControlRect.current = segmentedControlRect;
-    prevMeDialogRect.current = meDialogRect;
     prevCenterTileRect.current = centerTileRect;
 
     const vertices = meshRef.current.geometry.attributes.position.array as Float32Array;
@@ -189,9 +172,8 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
     const animatedCenterTileStrength = centerTileBumpStrength.get();
     const animatedProfileDialogStrength = profileDialogBumpStrength.get();
     const animatedSegmentedControlStrength = segmentedControlBumpStrength.get();
-    const animatedMeDialogStrength = meDialogBumpStrength.get();
 
-    if (strength === 0 && !isPointerDown && animatedDialogStrength === 0 && animatedTileStrength === 0 && animatedProfileDialogStrength === 0 && animatedSegmentedControlStrength === 0 && animatedMeDialogStrength === 0 && !rippleRef.current?.active && animatedCenterTileStrength === 0) {
+    if (strength === 0 && !isPointerDown && animatedDialogStrength === 0 && animatedTileStrength === 0 && animatedProfileDialogStrength === 0 && animatedSegmentedControlStrength === 0 && !rippleRef.current?.active && animatedCenterTileStrength === 0) {
       if (vertices.every((v, i) => v === originalPositions.current![i])) return;
 
       for (let i = 0; i < vertices.length; i++) {
@@ -277,22 +259,6 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
         zDisplacement += animatedProfileDialogStrength * factor;
       }
 
-      if (meDialogRect && animatedMeDialogStrength !== 0) {
-        const rectHalfWidth = meDialogRect.width / 2;
-        const rectHalfHeight = meDialogRect.height / 2;
-        const cornerRadius = meDialogRect.cornerRadius;
-
-        const dist = sdfRoundedBox(
-          new THREE.Vector2(x, y),
-          new THREE.Vector2(rectHalfWidth, rectHalfHeight),
-          cornerRadius
-        );
-
-        const edgeSoftness = dialogBumpConfig.dialogEdgeSoftness;
-        const factor = 1.0 - smoothstep(0, edgeSoftness, dist);
-        zDisplacement += animatedMeDialogStrength * factor;
-      }
-
       if (centerTileRect && animatedCenterTileStrength !== 0) {
         const rectHalfWidth = centerTileRect.width / 2;
         const rectHalfHeight = centerTileRect.height / 2;
@@ -365,13 +331,12 @@ const DeformableGrid = ({ isPointerDown, pointerPos, bumpStrength, dialogRect, w
   );
 };
 
-const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect, profileDialogRect, segmentedControlRect, meDialogRect, centerTileRect, dialogBumpConfig }: {
+const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect, profileDialogRect, segmentedControlRect, centerTileRect, dialogBumpConfig }: {
   onPointerUp: (e: ThreeEvent<PointerEvent>) => void,
   dialogRect: Rect | null,
   warpTileRect: Rect | null,
   profileDialogRect: Rect | null,
   segmentedControlRect: Rect | null,
-  meDialogRect: Rect | null,
   centerTileRect: Rect | null,
   dialogBumpConfig: DialogBumpConfig,
 }) => {
@@ -419,7 +384,6 @@ const InteractiveGrid = ({ onPointerUp, dialogRect, warpTileRect, profileDialogR
         warpTileRect={warpTileRect}
         profileDialogRect={profileDialogRect}
         segmentedControlRect={segmentedControlRect}
-        meDialogRect={meDialogRect}
         centerTileRect={centerTileRect}
         dialogBumpConfig={dialogBumpConfig}
       />
@@ -470,7 +434,6 @@ const GridCanvas = () => {
     activeWarp,
     openMakeWarpDialog,
     dialogSize,
-    meDialogSize,
     centerTileSize,
   } = useGridState();
   const [viewportInfo, setViewportInfo] = useState<ViewportInfo | null>(null);
@@ -506,21 +469,6 @@ const GridCanvas = () => {
 
     return { width: dialogWorldWidth, height: dialogWorldHeight, cornerRadius };
   }, [dialogSize, viewportInfo]);
-
-  const meDialogRect = useMemo(() => {
-    if (!meDialogSize || !viewportInfo) return null;
-
-    const { viewport, size } = viewportInfo;
-    const dialogWidthPx = meDialogSize.width;
-    const dialogHeightPx = meDialogSize.height;
-    const dialogCornerRadiusPx = 48;
-
-    const dialogWorldWidth = (dialogWidthPx / size.width) * viewport.width;
-    const dialogWorldHeight = (dialogHeightPx / size.height) * viewport.height;
-    const cornerRadius = (dialogCornerRadiusPx / size.width) * viewport.width;
-
-    return { width: dialogWorldWidth, height: dialogWorldHeight, cornerRadius };
-  }, [meDialogSize, viewportInfo]);
 
   const centerTileRect = useMemo(() => {
     if (!centerTileSize || !viewportInfo) return null;
@@ -590,7 +538,6 @@ const GridCanvas = () => {
             warpTileRect={warpTileRect}
             profileDialogRect={null}
             segmentedControlRect={segmentedControlRect}
-            meDialogRect={meDialogRect}
             centerTileRect={centerTileRect}
             dialogBumpConfig={dialogBumpConfig}
           />
