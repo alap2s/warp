@@ -47,6 +47,8 @@ export const useWarps = (options: UseWarpsOptions = { filter: 'all' }) => {
           // If friends filter is on but there are no friends, show no warps.
           warpsToProcess = [];
         }
+      } else { // 'all' filter for the World tab
+        warpsToProcess = allWarps.filter(warp => (warp.type === 'public' || !warp.type) || warp.ownerId === user?.uid);
       }
       
       if (warpsToProcess.length > 0) {
@@ -82,6 +84,7 @@ export const useWarps = (options: UseWarpsOptions = { filter: 'all' }) => {
       id: newWarpId,
       when: Timestamp.fromDate(data.when),
       participants: [],
+      type: data.type,
       user: {
         username: profile.username,
         icon: profile.icon,

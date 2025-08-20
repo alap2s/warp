@@ -16,6 +16,7 @@ export interface Warp {
   icon: string;
   ownerId: string;
   participants: string[];
+  type: 'public' | 'friends';
   user?: UserProfile;
   coordinates?: {
     lat: number;
@@ -32,3 +33,7 @@ export interface Notification {
   warpId?: string;
   type?: 'new_warp' | 'warp_join';
 }
+
+export type FriendActivityTile =
+  | { type: 'warp'; data: Warp }
+  | { type: 'friend'; data: UserProfile };
