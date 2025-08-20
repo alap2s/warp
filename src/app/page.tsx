@@ -110,6 +110,7 @@ const AppContent = () => {
   }, [profile, searchParams, hasHandledRedirect]);
 
   const handleOnboardingComplete = () => {
+    /*
     if (Notification.permission === 'default') {
       setTimeout(async () => {
         const permission = await Notification.requestPermission();
@@ -119,6 +120,7 @@ const AppContent = () => {
         }
       }, 20000); // 20 seconds
     }
+    */
   };
 
   if (loading) {
