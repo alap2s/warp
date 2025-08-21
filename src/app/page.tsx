@@ -8,7 +8,7 @@ import ProfileDialog from '@/components/ProfileDialog';
 import { useSearchParams } from 'next/navigation';
 import { GridStateProvider, useGridState } from '@/context/GridStateContext';
 import { useWarps } from '@/lib/hooks/useWarps';
-import { createUserProfile, updateUserProfile, getUsersByIds } from '@/lib/user';
+import { createUserProfile, getUsersByIds } from '@/lib/user';
 import { signInAnonymously } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import GridUIManager from '@/components/GridUIManager';
@@ -81,7 +81,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
 };
 
 const AppContent = () => {
-  const { user, profile, loading, refreshProfile } = useAuth();
+  const { user, profile, loading } = useAuth();
   const searchParams = useSearchParams();
   const [sharedWarp, setSharedWarp] = useState<Warp | null>(null);
   const [hasHandledRedirect, setHasHandledRedirect] = useState(false);

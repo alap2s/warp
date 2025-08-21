@@ -3,7 +3,7 @@
 import React from 'react';
 //import { IconButton } from './ui/IconButton';
 import { Button } from './ui/Button';
-import { Bell, BellOff, Trash2, Sun, Moon } from 'lucide-react';
+import { Trash2, Sun, Moon } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import Image from 'next/image';
 // import NotificationToggle from './ui/NotificationToggle';
@@ -18,14 +18,12 @@ const MeDialog = ({
   onSizeChange,
   onUpdateAvatar,
   onDeleteAccount,
-  onUpdateProfile,
 }: {
   userProfile: UserProfile;
   onClose: () => void;
   onSizeChange?: (size: { width: number; height: number }) => void;
   onUpdateAvatar: () => void;
   onDeleteAccount: () => void;
-  onUpdateProfile: (data: { notificationsEnabled: boolean }) => void;
 }) => {
   const [theme, setTheme] = React.useState<'light' | 'dark'>('dark');
 
