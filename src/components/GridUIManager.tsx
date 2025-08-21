@@ -274,13 +274,6 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
     setMeDialogOpen(true);
   };
 
-  const handleUpdateProfile = async (data: Partial<UserProfile>) => {
-    if (user) {
-      await updateUserProfile(user.uid, data);
-      await refreshProfile();
-    }
-  };
-
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Clicks on the background should deselect the active warp and close the dialog.
     if ((e.target as HTMLElement).classList.contains('grid-ui-manager')) {
