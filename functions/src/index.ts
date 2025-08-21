@@ -182,7 +182,7 @@ export const sendNotificationOnWarpJoin = onDocumentUpdated({
   return null;
 });
 
-export const deleteUserAccount = onCall({region: "europe-west3"}, async (request) => {
+export const deleteUserAccount = onCall({region: "europe-west3", cors: true}, async (request) => {
     if (!request.auth) {
         throw new HttpsError("unauthenticated", "You must be logged in to delete your account.");
     }

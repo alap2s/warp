@@ -10,7 +10,7 @@ import {
   limit,
 } from 'firebase/firestore';
 import { auth, db } from "./firebase";
-import { deleteUser as deleteFirebaseUser } from "firebase/auth";
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { UserProfile } from "./types";
 
 export const createUserProfile = async (uid: string, data: { username: string; icon: string; photoURL?: string }) => {
@@ -85,12 +85,13 @@ export const deleteUserAccount = async () => {
   }
 
   try {
-    // Deleting the user from Firebase Authentication will trigger
-    // the onUserDelete cloud function to clean up all their data.
-    await deleteFirebaseUser(user);
-    console.log("User account deleted successfully. Backend cleanup initiated.");
+    const functions = getFunctions(undefined, "europe-west3");
+    const deleteUserAccountCallable = httpsCallable(functions, 'deleteUserAccount');
+    await deleteUserAccountCallable();
+    console.log("Successfully called backend function to delete user account and data.");
+    window.location.reload();
   } catch (error) {
-    console.error("Error deleting user account:", error);
-    throw new Error('Failed to delete user account. This may require you to sign in again.');
+    console.error("Error calling delete user account function:", error);
+    throw new Error('Failed to delete user account. Please try again.');
   }
 };
