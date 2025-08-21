@@ -90,7 +90,7 @@ export const sendNotificationOnWarpCreate = onDocumentCreated({
       return;
     }
 
-    if (user.notificationsEnabled) {
+    // if (user.notificationsEnabled) {
       const notification = {
         userId: user.uid,
         type: "new_warp",
@@ -111,7 +111,7 @@ export const sendNotificationOnWarpCreate = onDocumentCreated({
         };
         fcmMessages.push(getMessaging().sendEachForMulticast(message));
       }
-    }
+    // }
   });
 
   await Promise.all([...notifications, ...fcmMessages]);
@@ -146,7 +146,7 @@ export const sendNotificationOnWarpJoin = onDocumentUpdated({
       const ownerProfileDoc = await db.collection("users").doc(ownerId).get();
       const ownerProfile = ownerProfileDoc.data();
 
-      if (ownerProfile && ownerProfile.notificationsEnabled) {
+      if (ownerProfile) {
         const notification = {
           userId: ownerId,
           type: "warp_join",
