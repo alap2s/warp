@@ -85,7 +85,10 @@ const MeDialog = ({
             ) : (
               <Sun size={16} strokeWidth={2.25} className="text-white/80" />
             )}
-            <p className="text-white/80 font-medium">Theme</p>
+            <div>
+              <p className="text-white/80 font-medium">Theme</p>
+              <p className="text-xs text-white/40">Coming soon</p>
+            </div>
           </div>
           <ThemeToggle 
             value={theme}
@@ -111,10 +114,10 @@ const MeDialog = ({
         </div>
         */}
         <hr className="border-white/20" />
-        <div>
+        <div className="gap-2">
           <h3 className="text-sm font-medium text-white/40 mb-2">About this app</h3>
           <p className="text-white/80 text-sm">
-            This app is inspired by Einstein&apos;s theory of relativity. It&apos;s about creating your reality warp in space and time fabric. You can let friends join in your reality by sharing your warp anywhere. This is a hobby project created by me (<a href="https://www.instagram.com/test_alap_final/" target="_blank" rel="noopener noreferrer" className="underline">@alap</a>), a designer and experimentor based in Berlin.
+            Inspired by Einstein&apos;s theory of relativity, Warp lets you share moments in the fabric of spacetime. A hobby project by <a href="https://www.instagram.com/test_alap_final/" target="_blank" rel="noopener noreferrer" className="underline">@alap</a>, a designer and experimenter from Berlin.
           </p>
         </div>
         <hr className="border-white/20" />
