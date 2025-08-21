@@ -459,7 +459,6 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
                 setUpdatingAvatar(true);
               }}
               onDeleteAccount={() => setMeDialogOpen(false)}
-              onUpdateProfile={handleUpdateProfile}
             />
           )}
         </AnimatePresence>
