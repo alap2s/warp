@@ -3,13 +3,14 @@
 import React from 'react';
 //import { IconButton } from './ui/IconButton';
 import { Button } from './ui/Button';
-import { Bell, BellOff, Trash2 } from 'lucide-react';
+import { Trash2, Sun, Moon } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import Image from 'next/image';
-import NotificationToggle from './ui/NotificationToggle';
+// import NotificationToggle from './ui/NotificationToggle';
 import DialogHeader from './ui/DialogHeader';
 import { deleteUserAccount } from '@/lib/user';
 import { UserProfile } from '@/lib/types';
+import ThemeToggle from './ui/ThemeToggle';
 
 const MeDialog = ({
   userProfile,
@@ -17,21 +18,23 @@ const MeDialog = ({
   onSizeChange,
   onUpdateAvatar,
   onDeleteAccount,
-  onUpdateProfile,
 }: {
   userProfile: UserProfile;
   onClose: () => void;
   onSizeChange?: (size: { width: number; height: number }) => void;
   onUpdateAvatar: () => void;
   onDeleteAccount: () => void;
-  onUpdateProfile: (data: { notificationsEnabled: boolean }) => void;
 }) => {
+  const [theme, setTheme] = React.useState<'light' | 'dark'>('dark');
+
+  /*
   const [notifications, setNotifications] = React.useState(userProfile.notificationsEnabled ?? false);
   const [permissionStatus, setPermissionStatus] = React.useState<NotificationPermission>('default');
 
   React.useEffect(() => {
     setPermissionStatus(Notification.permission);
   }, []);
+  */
 
   const handleDelete = async () => {
     await deleteUserAccount();
@@ -39,6 +42,7 @@ const MeDialog = ({
     window.location.reload();
   };
 
+  /*
   const handleNotificationChange = async (value: boolean) => {
     if (value) {
       if (permissionStatus === 'default') {
@@ -57,6 +61,7 @@ const MeDialog = ({
       onUpdateProfile({ notificationsEnabled: false });
     }
   };
+  */
 
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={true}>
@@ -75,6 +80,22 @@ const MeDialog = ({
         <hr className="border-white/20" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            {theme === 'dark' ? (
+              <Moon size={16} strokeWidth={2.25} className="text-white/80" />
+            ) : (
+              <Sun size={16} strokeWidth={2.25} className="text-white/80" />
+            )}
+            <p className="text-white/80 font-medium">Theme</p>
+          </div>
+          <ThemeToggle 
+            value={theme}
+            onChange={setTheme}
+          />
+        </div>
+        {/*
+        <hr className="border-white/20" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             {notifications ? (
               <Bell size={16} strokeWidth={2.25} className="text-white/80" />
             ) : (
@@ -88,6 +109,7 @@ const MeDialog = ({
             disabled={permissionStatus === 'denied'}
           />
         </div>
+        */}
         <hr className="border-white/20" />
         <div>
           <h3 className="text-sm font-medium text-white/40 mb-2">About this app</h3>

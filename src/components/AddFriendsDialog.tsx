@@ -107,7 +107,7 @@ const AddFriendsDialog = ({ isOpen, onClose, onSizeChange, showCloseButton = tru
       <div className="flex flex-col text-left space-y-6">
         <div>
           <p className="text-sm text-gray-400 mb-2">
-            Share this one time code with your friends to add them on the app.
+            Share this one time code with a friend to add them on the app.
           </p>
           <div className="flex items-center space-x-2">
             <Input
@@ -126,7 +126,7 @@ const AddFriendsDialog = ({ isOpen, onClose, onSizeChange, showCloseButton = tru
         <div className="border-t border-gray-700 mt-4"></div>
         <div>
           <p className="text-sm text-gray-400 mb-2">
-            Or enter a code a friend shared with you.
+            Or enter a code from your friend.
           </p>
           <div className="flex items-center space-x-2">
             <Input 

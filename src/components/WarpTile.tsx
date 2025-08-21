@@ -65,6 +65,10 @@ const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({
 
     const diffMinutes = (date.getTime() - now.getTime()) / 60000;
 
+    if (diffMinutes <= -120) {
+      return "Past";
+    }
+
     if (diffMinutes > -120 && diffMinutes <= 15) {
       return "Now";
     }
@@ -109,7 +113,7 @@ const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({
       <div className="flex flex-col items-center text-center">
         <p className="text-white text-xs font-medium truncate w-full">{username}</p>
         <p className="text-white/70 text-[10px] font-light w-full truncate">
-          {dateLabel}{distanceLabel && `, ${distanceLabel}`}
+          {dateLabel}{dateLabel !== 'Past' && distanceLabel && `, ${distanceLabel}`}
         </p>
       </div>
     </div>

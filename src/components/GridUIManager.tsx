@@ -23,7 +23,7 @@ import AddFriendsDialog from './AddFriendsDialog';
 import { onFriendsUpdate } from '@/lib/friends';
 import FriendTile from './FriendTile';
 import { UserPlus } from 'lucide-react';
-import { IconButton } from './ui/IconButton';
+import { Button } from './ui/Button';
 
 const CreateWarpTile = React.forwardRef<HTMLDivElement, { onClick: () => void, onSizeChange?: (size: { width: number, height: number } | null) => void }>(({ onClick, onSizeChange }, ref) => {
   useLayoutEffect(() => {
@@ -274,13 +274,6 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
     setMeDialogOpen(true);
   };
 
-  const handleUpdateProfile = async (data: Partial<UserProfile>) => {
-    if (user) {
-      await updateUserProfile(user.uid, data);
-      await refreshProfile();
-    }
-  };
-
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Clicks on the background should deselect the active warp and close the dialog.
     if ((e.target as HTMLElement).classList.contains('grid-ui-manager')) {
@@ -433,8 +426,11 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
       </AnimatePresence>
 
       {segmentedControlSelection === 'Friends' && friends.length > 0 && showTiles && (
-        <div className="absolute top-4 right-4 z-50">
-          <IconButton variant="outline" onClick={() => setAddFriendsDialogOpen(true)} icon={UserPlus} />
+        <div className="absolute bottom-[100px] left-1/2 -translate-x-1/2 z-50">
+          <Button variant="secondary" onClick={() => setAddFriendsDialogOpen(true)} className="bg-[#0A0A0A] hover:bg-[#0A0A0A]">
+            <UserPlus size={16} strokeWidth={2.25} className="mr-2" />
+            Add
+          </Button>
         </div>
       )}
 
@@ -456,7 +452,6 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
                 setUpdatingAvatar(true);
               }}
               onDeleteAccount={() => setMeDialogOpen(false)}
-              onUpdateProfile={handleUpdateProfile}
             />
           )}
         </AnimatePresence>
