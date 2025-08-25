@@ -7,6 +7,7 @@ import Dialog from './ui/Dialog';
 import { signInAnonymously } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { usePWA } from '@/lib/hooks/usePWA';
+import { triggerHapticFeedback } from '@/lib/haptics';
 
 const InstallInstructions = ({ platform }: { platform: 'iOS' | 'Android' | 'Desktop' | 'other' }) => {
   if (platform === 'iOS') {
@@ -81,6 +82,11 @@ export const WelcomeDialog = ({
     signIn();
   }, []);
 
+  const handleNextClick = () => {
+    triggerHapticFeedback();
+    onNext();
+  };
+
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal>
       <div className="flex items-start justify-between">
@@ -89,7 +95,7 @@ export const WelcomeDialog = ({
           <p>Warp</p>
         </div>
         {(displayMode === 'standalone' || platform === 'Desktop') && (
-          <IconButton variant="outline" onClick={onNext} icon={ArrowRight} />
+          <IconButton variant="outline" onClick={handleNextClick} icon={ArrowRight} />
         )}
       </div>
       <div className="mt-0">

@@ -8,6 +8,7 @@ import { formatDistance, getCurrentCoordinates } from '@/lib/location';
 import { Timestamp } from 'firebase/firestore';
 import DynamicIcon from './ui/DynamicIcon';
 import { getIconName } from '@/lib/icon-map';
+import { triggerHapticFeedback } from '@/lib/haptics';
 
 interface WarpTileProps {
   warp: Warp;
@@ -59,6 +60,11 @@ const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({
       });
   }, []);
 
+  const handleTileClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    triggerHapticFeedback();
+    onClick(e);
+  };
+
   const formatWarpTime = (when: Date | Timestamp) => {
     const date = when instanceof Timestamp ? when.toDate() : new Date(when);
     const now = new Date();
@@ -90,7 +96,7 @@ const WarpTile = React.forwardRef<HTMLDivElement, WarpTileProps>(({
   const tileContent = (
     <div 
       className="w-[84px] h-[84px] bg-black border-2 border-white/40 rounded-[24px] p-2 flex flex-col items-center justify-center gap-1 cursor-pointer"
-      onClick={onClick}
+      onClick={handleTileClick}
     >
       <div className="absolute -top-2 -right-2">
         {joinerCount && joinerCount > 0 ? (

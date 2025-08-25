@@ -11,6 +11,7 @@ import DialogHeader from './ui/DialogHeader';
 import { deleteUserAccount } from '@/lib/user';
 import { UserProfile } from '@/lib/types';
 import ThemeToggle from './ui/ThemeToggle';
+import { triggerHapticFeedback } from '@/lib/haptics';
 
 const MeDialog = ({
   userProfile,
@@ -37,6 +38,7 @@ const MeDialog = ({
   */
 
   const handleDelete = async () => {
+    triggerHapticFeedback();
     await deleteUserAccount();
     onDeleteAccount();
     window.location.reload();
@@ -63,11 +65,16 @@ const MeDialog = ({
   };
   */
 
+  const handleUpdateAvatarClick = () => {
+    triggerHapticFeedback();
+    onUpdateAvatar();
+  };
+
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={true}>
       <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
         <DialogHeader title={[userProfile.username]}>
-            <button onClick={onUpdateAvatar} className="overflow-hidden rounded-2xl">
+            <button onClick={handleUpdateAvatarClick} className="overflow-hidden rounded-2xl">
               <Image
                 src={`/Thumbs/${userProfile.icon}`}
                 alt="Avatar"

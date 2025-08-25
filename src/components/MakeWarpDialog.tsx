@@ -16,6 +16,7 @@ import { getCurrentCoordinates, getAddressFromCoordinates, getCoordinatesFromAdd
 import { getIconName } from '@/lib/icon-map';
 import DynamicIcon from './ui/DynamicIcon';
 import SegmentedControl from './ui/SegmentedControl';
+import { triggerHapticFeedback } from '@/lib/haptics';
 
 interface IconProps {
   className?: string;
@@ -273,6 +274,7 @@ export const MakeWarpDialog = ({
   };
 
   const handlePost = () => {
+    triggerHapticFeedback();
     const data = {
       what: whatValue,
       when: whenValue,
@@ -289,6 +291,7 @@ export const MakeWarpDialog = ({
   };
 
   const handleDelete = async () => {
+    triggerHapticFeedback();
     if (onDelete) {
       setIsDeleting(true);
       try {
