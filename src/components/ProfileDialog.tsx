@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Dialog from './ui/Dialog';
 import { AtSign, Check } from 'lucide-react';
 import { IconButton } from './ui/IconButton';
@@ -30,19 +30,20 @@ export const ProfileDialog = ({
   const [isUploading, setIsUploading] = useState(false);
 
   // Debounced username check... (code is unchanged)
-  const debouncedCheckUsername = useCallback(
-    debounce(async (name) => {
-      if (name.length >= 3) {
-        setIsLoading(true);
-        const available = await isUsernameAvailable(name);
-        setIsAvailable(available);
-        setIsValid(available);
-        setIsLoading(false);
-      } else {
-        setIsAvailable(null);
-        setIsValid(false);
-      }
-    }, 500),
+  const debouncedCheckUsername = useMemo(
+    () =>
+      debounce(async (name) => {
+        if (name.length >= 3) {
+          setIsLoading(true);
+          const available = await isUsernameAvailable(name);
+          setIsAvailable(available);
+          setIsValid(available);
+          setIsLoading(false);
+        } else {
+          setIsAvailable(null);
+          setIsValid(false);
+        }
+      }, 500),
     []
   );
 

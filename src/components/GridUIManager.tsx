@@ -13,7 +13,7 @@ import { Plus } from 'lucide-react';
 import OpenWarpDialog from './OpenWarpDialog';
 import LoadingDialog from './ui/LoadingDialog';
 import { useNotifications } from '@/lib/hooks/useNotifications';
-import { getUsersByIds, updateUserProfile } from '@/lib/user';
+import { getUsersByIds } from '@/lib/user';
 import { markNotificationsAsRead } from '@/lib/warp';
 import type { Warp, UserProfile, FriendActivityTile } from '@/lib/types';
 import { debounce } from 'lodash';
@@ -68,7 +68,7 @@ interface GridUIManagerProps {
 }
 
 const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) => {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile } = useAuth();
   const router = useRouter();
   const { notifications } = useNotifications(user?.uid || null);
   const { 

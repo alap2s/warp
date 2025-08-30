@@ -5,11 +5,9 @@ import { Button } from './ui/Button';
 import { Trash2, Sun, Moon, UserSquare } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import Image from 'next/image';
-import DialogHeader from './ui/DialogHeader';
 import { deleteUserAccount } from '@/lib/user';
 import { UserProfile } from '@/lib/types';
 import ThemeToggle from './ui/ThemeToggle';
-import UpdateAvatarDialog from './UpdateAvatarDialog';
 
 const MeDialog = ({
   userProfile,

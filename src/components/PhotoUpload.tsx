@@ -3,6 +3,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Camera, Image as ImageIcon, Trash2, X, Check } from 'lucide-react';
+import NextImage from 'next/image';
 import CameraFeed from './CameraFeed';
 import { Button } from './ui/Button';
 import { IconButton } from './ui/IconButton';
@@ -209,7 +210,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onPhotoSelect, onViewChange }
         return (
           <div className="flex gap-4 items-start w-full">
             <div className="w-40 h-36 rounded-lg overflow-hidden flex-shrink-0">
-              {imageData && <img src={imageData} alt="Preview" className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />}
+              {imageData && <NextImage src={imageData} alt="Preview" width={CAMERA_WIDTH} height={CAMERA_HEIGHT} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />}
             </div>
             <div className="flex flex-col gap-2">
               <IconButton onClick={handleDelete} icon={Trash2} variant="outline" />
