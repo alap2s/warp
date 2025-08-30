@@ -1,29 +1,28 @@
 'use client';
 
 import React from 'react';
-//import { IconButton } from './ui/IconButton';
 import { Button } from './ui/Button';
-import { Trash2, Sun, Moon } from 'lucide-react';
+import { Trash2, Sun, Moon, UserSquare } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import Image from 'next/image';
-// import NotificationToggle from './ui/NotificationToggle';
 import DialogHeader from './ui/DialogHeader';
 import { deleteUserAccount } from '@/lib/user';
 import { UserProfile } from '@/lib/types';
 import ThemeToggle from './ui/ThemeToggle';
+import UpdateAvatarDialog from './UpdateAvatarDialog';
 
 const MeDialog = ({
   userProfile,
   onClose,
   onSizeChange,
-  onUpdateAvatar,
   onDeleteAccount,
+  onUpdateProfile,
 }: {
   userProfile: UserProfile;
   onClose: () => void;
   onSizeChange?: (size: { width: number; height: number }) => void;
-  onUpdateAvatar: () => void;
   onDeleteAccount: () => void;
+  onUpdateProfile: () => void;
 }) => {
   const [theme, setTheme] = React.useState<'light' | 'dark'>('dark');
 
@@ -66,17 +65,26 @@ const MeDialog = ({
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={true}>
       <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
-        <DialogHeader title={[userProfile.username]}>
-            <button onClick={onUpdateAvatar} className="overflow-hidden rounded-2xl">
-              <Image
-                src={`/Thumbs/${userProfile.icon}`}
-                alt="Avatar"
-                width={60}
-                height={60}
-                className="rounded-2xl"
-              />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={onUpdateProfile} className="focus:outline-none w-12 h-12">
+                {userProfile.photoURL ? (
+                    <Image
+                        src={userProfile.photoURL}
+                        alt="Avatar"
+                        width={48}
+                        height={48}
+                        className="rounded-xl object-cover w-full h-full"
+                    />
+                ) : (
+                    <UserSquare size={48} strokeWidth={1.5} className="text-white/40" />
+                )}
             </button>
-        </DialogHeader>
+            <div className="dialog-title">
+              <p>{userProfile.username}</p>
+            </div>
+          </div>
+        </div>
         <hr className="border-white/20" />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

@@ -40,7 +40,7 @@ const OnboardingFlow = ({ onComplete }: { onComplete: () => void }) => {
     setStep('profile');
   }
   
-  const handleProfileSave = async (data: { username: string, icon: string }) => {
+  const handleProfileSave = async (data: { username: string, photoURL: string }) => {
     if (user) {
       await createUserProfile(user.uid, data);
       await refreshProfile();
