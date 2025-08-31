@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Button } from './ui/Button';
-import { Trash2, Sun, Moon, UserSquare } from 'lucide-react';
+import { Trash2, Sun, Moon, User } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import Image from 'next/image';
 import { deleteUserAccount } from '@/lib/user';
@@ -76,7 +76,7 @@ const MeDialog = ({
                         className="rounded-xl object-cover w-full h-full"
                     />
                 ) : (
-                    <IconButton icon={UserSquare} onClick={onUpdateProfile} variant="outline" className="w-12 h-12" />
+                    <IconButton icon={User} onClick={onUpdateProfile} variant="outline" className="w-12 h-12" />
                 )}
             </button>
             <div className="dialog-title">
