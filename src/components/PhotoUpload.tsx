@@ -30,15 +30,13 @@ const clamp = (value: number, min: number, max: number) => {
 };
 
 
-type UploadState = 'initial' | 'camera' | 'preview';
+type UploadState = 'options' | 'camera' | 'preview';
 
-interface PhotoUploadProps {
-  onPhotoSelect: (dataUrl: string | null) => void;
+export const PhotoUpload = ({ onPhotoSelect, onViewChange }: {
+  onPhotoSelect: (dataUrl: string) => void;
   onViewChange?: (view: 'options' | 'camera' | 'preview') => void;
-}
-
-const PhotoUpload: React.FC<PhotoUploadProps> = ({ onPhotoSelect, onViewChange }) => {
-  const [uploadState, setUploadState] = useState<UploadState>('initial');
+}) => {
+  const [uploadState, setUploadState] = useState<UploadState>('options');
   const [imageData, setImageData] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,15 +44,8 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onPhotoSelect, onViewChange }
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    // Transition from initial to options view on mount
-    setUploadState('options');
-  }, []);
-
-  useEffect(() => {
-    // Notify parent component of view change, skipping the internal 'initial' state
-    if (uploadState !== 'initial') {
-      onViewChange?.(uploadState);
-    }
+    // Notify parent component of view change
+    onViewChange?.(uploadState);
   }, [uploadState, onViewChange]);
 
   const applyGameboyFilter = useCallback((canvas: HTMLCanvasElement) => {
@@ -189,25 +180,21 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onPhotoSelect, onViewChange }
   
   const handleCancel = () => {
     stopCamera();
-    setUploadState('initial');
+    setUploadState('options');
     setImageData(null);
-    onPhotoSelect(null);
   };
   
   const handleDelete = () => {
-    setUploadState('initial');
+    setUploadState('options');
     setImageData(null);
-    onPhotoSelect(null);
   };
 
   const renderContent = () => {
     switch (uploadState) {
-      case 'initial':
-        return null;
       case 'camera':
         return (
           <div className="flex gap-4 items-start w-full">
-            <div className="w-40 h-36 bg-gray-900 rounded-lg overflow-hidden flex-shrink-0">
+            <div className="w-40 h-36 rounded-lg overflow-hidden flex-shrink-0 bg-black">
               <CameraFeed ref={videoRef} stream={stream} />
             </div>
             <div className="flex flex-col gap-2">
@@ -227,7 +214,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onPhotoSelect, onViewChange }
             </div>
           </div>
         );
-      case 'initial':
+      case 'options':
       default:
         return (
           <div className="flex gap-4 w-full">

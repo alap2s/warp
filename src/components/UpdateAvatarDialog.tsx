@@ -49,31 +49,20 @@ export const UpdateAvatarDialog = ({
   };
 
   return (
-    <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal className="w-[300px]">
+    <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal>
+      <div className="w-[300px]">
         <DialogHeader title={['Update', 'Photo']}>
             {!isCameraActive && (
               <div className="flex items-center gap-2">
-                  <IconButton 
-                          variant="outline" 
-                          onClick={onClose} 
-                          icon={X}
-                          className="text-white/80 hover:text-white"
-                  />
-                  <IconButton 
-                      variant="default" 
-                      onClick={handleSave} 
-                      disabled={!selectedPhoto || isUploading} 
-                      icon={Check} 
-                  />
+                <IconButton onClick={handleSave} icon={Check} disabled={!selectedPhoto || isUploading} variant="outline" className="text-white/80 hover:text-white" />
+                <IconButton onClick={onClose} icon={X} variant="outline" className="text-white/80 hover:text-white" />
               </div>
             )}
         </DialogHeader>
-        <div className="flex flex-col justify-center gap-3 mt-4">
-            <PhotoUpload 
-              onPhotoSelect={setSelectedPhoto} 
-              onViewChange={(view) => setIsCameraActive(view === 'camera')}
-            />
+        <div className="pb-4 pt-2">
+          <PhotoUpload onPhotoSelect={setSelectedPhoto} onViewChange={(view) => setIsCameraActive(view === 'camera')} />
         </div>
+      </div>
     </Dialog>
   );
 };
