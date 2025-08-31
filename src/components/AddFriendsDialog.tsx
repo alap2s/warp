@@ -138,7 +138,13 @@ const AddFriendsDialog = ({ isOpen, onClose, onSizeChange, showCloseButton = tru
               onChange={(e) => setFriendCode(e.target.value)}
               icon={<UserPlus size={16} className="text-gray-400" />}
             />
-            <IconButton variant="outline" onClick={handleAddFriend} className="flex-shrink-0" icon={UserPlus} disabled={isLoading} />
+            <IconButton 
+              variant="outline" 
+              onClick={handleAddFriend} 
+              className="flex-shrink-0" 
+              icon={UserPlus} 
+              isLoading={isLoading} 
+            />
           </div>
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         </div>

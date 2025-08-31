@@ -12,6 +12,9 @@ let notificationSynth: Tone.MembraneSynth | null = null;
 let dialogSynth: Tone.Synth | null = null;
 let joinSynth: Tone.DuoSynth | null = null;
 
+let lastPlayed = 0;
+const throttleTime = 1000; // 1 second
+
 /**
  * Dynamically imports Tone.js and creates all synthesizers and effects.
  * This MUST be called after the first user gesture.
@@ -111,8 +114,11 @@ export const playDialogSound = (action: 'open' | 'close') => {
 };
 
 export const playNotification = () => {
-  if (!isInitialized || !notificationSynth || !ToneJs) return;
-  notificationSynth.triggerAttackRelease("A5", "16n", ToneJs.now());
+  const now = Tone.now();
+  if (now - lastPlayed > throttleTime / 1000) {
+    notificationSynth.triggerAttackRelease('G5', '8n');
+    lastPlayed = now;
+  }
 };
 
 export const playJoinWarp = () => {

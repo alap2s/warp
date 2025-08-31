@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { FormData } from '@/components/MakeWarpDialog';
 
-import { Warp } from '@/lib/types';
+import { Warp, UserProfile } from '@/lib/types';
 import { playCreateWarp, playDeleteWarp, playDialogSound } from '@/lib/audio';
 type DialogSize = { width: number, height: number } | null;
 
@@ -11,7 +11,10 @@ interface GridStateContextType {
   isMakeWarpDialogOpen: boolean;
   isOpenWarpDialogOpen: boolean;
   isMeDialogOpen: boolean;
+  isUserDialogOpen: boolean;
+  isUpdateAvatarDialogOpen: boolean;
   activeWarp: Warp | null;
+  activeUserProfile: UserProfile | null;
   warpToEdit: Warp | null;
   isSaving: boolean;
   isLoading: boolean;
@@ -22,7 +25,12 @@ interface GridStateContextType {
   openMakeWarpDialog: () => void;
   closeMakeWarpDialog: () => void;
   openWarpDialog: () => void;
-  closeWarpDialog: () => void;
+  closeWarpDialog: (isTransitioning?: boolean) => void;
+  openUserDialog: (user: UserProfile) => void;
+  closeUserDialog: () => void;
+  openUpdateAvatarDialog: () => void;
+  closeUpdateAvatarDialog: () => void;
+  deleteActiveWarp: () => void;
   postWarp: (data: FormData) => void;
   updateWarp: (data: FormData) => void;
   startEditWarp: (warp: Warp) => void;
@@ -70,7 +78,10 @@ export const GridStateProvider = ({
   const [isMakeWarpDialogOpen, setMakeWarpDialogOpen] = useState(false);
   const [isOpenWarpDialogOpen, setOpenWarpDialogOpen] = useState(false);
   const [isMeDialogOpen, setMeDialogOpen] = useState(false);
+  const [isUserDialogOpen, setUserDialogOpen] = useState(false);
+  const [isUpdateAvatarDialogOpen, setUpdateAvatarDialogOpen] = useState(false);
   const [activeWarp, setActiveWarp] = useState<Warp | null>(null);
+  const [activeUserProfile, setActiveUserProfile] = useState<UserProfile | null>(null);
   const [warpToEdit, setWarpToEdit] = useState<Warp | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [dialogSize, setDialogSize] = useState<DialogSize>(null);
@@ -95,12 +106,47 @@ export const GridStateProvider = ({
   };
 
   const closeWarpDialog = (isTransitioning = false) => {
-    if (!isTransitioning) {
-        playDialogSound('close');
-    }
     setOpenWarpDialogOpen(false);
-    setActiveWarp(null);
     setDialogSize(null);
+    if (!isTransitioning) {
+      setActiveWarp(null);
+      playDialogSound('close');
+    }
+  };
+
+  const openUserDialog = (user: UserProfile) => {
+    setActiveUserProfile(user);
+    setUserDialogOpen(true);
+    playDialogSound('open');
+  };
+
+  const closeUserDialog = () => {
+    setActiveUserProfile(null);
+    setUserDialogOpen(false);
+    setDialogSize(null);
+    playDialogSound('close');
+
+    if (activeWarp) {
+      setOpenWarpDialogOpen(true);
+    }
+  };
+
+  const deleteActiveWarp = async () => {
+    if (activeWarp) {
+      await removeWarp(activeWarp.id);
+      playDeleteWarp();
+      closeWarpDialog();
+    }
+  };
+
+  const openUpdateAvatarDialog = () => {
+    setMeDialogOpen(false);
+    setUpdateAvatarDialogOpen(true);
+  };
+
+  const closeUpdateAvatarDialog = () => {
+    setUpdateAvatarDialogOpen(false);
+    setMeDialogOpen(true);
   };
 
   const postWarp = async (data: FormData) => {
@@ -141,7 +187,10 @@ export const GridStateProvider = ({
     isMakeWarpDialogOpen,
     isOpenWarpDialogOpen,
     isMeDialogOpen,
+    isUserDialogOpen,
+    isUpdateAvatarDialogOpen,
     activeWarp,
+    activeUserProfile,
     warpToEdit,
     isSaving,
     isLoading,
@@ -153,6 +202,11 @@ export const GridStateProvider = ({
     closeMakeWarpDialog,
     openWarpDialog,
     closeWarpDialog,
+    openUserDialog,
+    closeUserDialog,
+    openUpdateAvatarDialog,
+    closeUpdateAvatarDialog,
+    deleteActiveWarp,
     postWarp,
     updateWarp,
     startEditWarp,

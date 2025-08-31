@@ -22,17 +22,23 @@ export interface IconButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof iconButtonVariants> {
       icon: React.ComponentType<{ size?: number; strokeWidth?: number; }>;
+      isLoading?: boolean;
     }
 
 const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ className, variant, icon: Icon, ...props }, ref) => {
+  ({ className, variant, icon: Icon, isLoading, ...props }, ref) => {
     return (
       <button
         className={cn(iconButtonVariants({ variant, className }))}
         ref={ref}
+        disabled={isLoading}
         {...props}
       >
-        <Icon size={16} strokeWidth={2.25} />
+        {isLoading ? (
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+        ) : (
+          <Icon size={16} strokeWidth={2.25} />
+        )}
       </button>
     )
   }

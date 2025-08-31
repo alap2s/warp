@@ -85,3 +85,16 @@ export const onFriendsUpdate = (userId: string, callback: (friends: UserProfile[
     callback(friends);
   });
 };
+
+export const removeFriend = async (friendId: string): Promise<void> => {
+  try {
+    const removeFriendFunction = httpsCallable(functions, 'removeFriend');
+    await removeFriendFunction({ friendId });
+  } catch (error) {
+    console.error("Error calling removeFriend function:", error);
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to remove friend.');
+    }
+    throw new Error('An unknown error occurred while removing friend.');
+  }
+};

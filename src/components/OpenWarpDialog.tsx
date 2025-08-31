@@ -7,7 +7,7 @@ import DialogHeader from './ui/DialogHeader';
 import { formatEuropeanDate, formatTime } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from './ui/Button';
-import { Merge, Edit, Share, SquareArrowOutUpRight, Split } from 'lucide-react';
+import { Merge, Edit, Share, SquareArrowOutUpRight, Split, Trash2 } from 'lucide-react';
 import { joinWarp, leaveWarp } from '@/lib/warp';
 import { usePrevious } from '@/lib/utils';
 import { IconButton } from './ui/IconButton';
@@ -19,10 +19,12 @@ interface OpenWarpDialogProps {
   onClose: () => void;
   onSizeChange?: (size: { width: number; height: number }) => void;
   onEdit: () => void;
+  onProfileClick: (user: UserProfile) => void;
+  onDelete: () => void;
   isPreview?: boolean;
 }
 
-const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEdit, isPreview = false }: OpenWarpDialogProps) => {
+const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEdit, onProfileClick, onDelete, isPreview = false }: OpenWarpDialogProps) => {
   const { user: currentUser } = useAuth();
   const [isJoined, setIsJoined] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -42,6 +44,8 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
   }, [participants, prevParticipants, isUpdating]);
 
   if (!warp) return null;
+
+  const isOwner = currentUser?.uid === warp.ownerId;
 
   const handleJoin = async () => {
     if (isPreview || !currentUser) {
@@ -105,16 +109,13 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
   
   return (
     <Dialog onClose={onClose} onSizeChange={onSizeChange} isModal={true}>
-      <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto">
+      <div className="flex flex-col gap-4 max-h-[70vh] overflow-y-auto">
       
-        <DialogHeader title={warp.user?.username || '...'} photoURL={warp.user?.photoURL}>
-          {currentUser?.uid === warp.ownerId && (
-            <>
-              <IconButton variant="outline" onClick={onEdit} icon={Edit} />
-              <IconButton variant="outline" onClick={handleShare} icon={Share} />
-            </>
-          )}
-        </DialogHeader>
+        <DialogHeader 
+          title={warp.user?.username || '...'} 
+          photoURL={warp.user?.photoURL}
+          onProfileClick={isOwner ? undefined : (warp.user ? () => onProfileClick(warp.user!) : undefined)}
+        />
         <hr className="border-white/20" />
         <div className="flex flex-col gap-4">
           <div>
@@ -142,28 +143,54 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
               <div>
                 <p className="text-sm text-neutral-400">Who</p>
                 <p className="text-lg text-white">
-                  {participantProfiles.map(p => `@${p.username}`).join(', ')}
+                  {participantProfiles.map((p, index) => (
+                    <React.Fragment key={p.uid}>
+                      <span
+                        className="cursor-pointer hover:underline"
+                        onClick={() => onProfileClick(p)}
+                      >
+                        @{p.username}
+                      </span>
+                      {index < participantProfiles.length - 1 && ', '}
+                    </React.Fragment>
+                  ))}
                 </p>
               </div>
             </>
           )}
         </div>
 
-        {currentUser?.uid !== warp.ownerId && (
+        {isOwner ? (
+          <>
+            <hr className="border-white/20" />
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2">
+                <IconButton variant="outline" onClick={onEdit} icon={Edit} />
+                <IconButton variant="outline" onClick={onDelete} icon={Trash2} />
+              </div>
+              <Button variant="secondary" onClick={handleShare}>
+                <Share size={16} className="mr-2" />
+                Share
+              </Button>
+            </div>
+          </>
+        ) : (
           <>
             <hr className="border-white/20" />
             <div className="flex justify-end">
               <Button
                 variant={isJoined ? "tertiary" : "primary"}
                 onClick={isJoined ? handleLeave : handleJoin}
-                disabled={isUpdating || (!isJoined && participants.length >= 20)}
+                disabled={!isJoined && participants.length >= 20}
+                isLoading={isUpdating}
               >
-                {isUpdating ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                {isJoined ? (
+                  <>
+                    <Split size={16} className="mr-2" /> Unjoin
+                  </>
                 ) : (
                   <>
-                    {isJoined ? <Split size={16} className="mr-2" /> : <Merge size={16} className="mr-2" />}
-                    {isJoined ? 'Unjoin' : 'Join'}
+                    <Merge size={16} className="mr-2" /> Join
                   </>
                 )}
               </Button>

@@ -24,6 +24,8 @@ import { onFriendsUpdate } from '@/lib/friends';
 import FriendTile from './FriendTile';
 import { UserPlus } from 'lucide-react';
 import { Button } from './ui/Button';
+import UserDialog from './UserDialog';
+import { removeFriend } from '@/lib/friends';
 
 const CreateWarpTile = React.forwardRef<HTMLDivElement, { onClick: () => void, onSizeChange?: (size: { width: number, height: number } | null) => void }>(({ onClick, onSizeChange }, ref) => {
   useLayoutEffect(() => {
@@ -75,7 +77,10 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
     isMakeWarpDialogOpen, 
     isOpenWarpDialogOpen,
     isMeDialogOpen,
+    isUserDialogOpen,
+    isUpdateAvatarDialogOpen,
     activeWarp, 
+    activeUserProfile,
     setActiveWarp, 
     warpToEdit, 
     postWarp, 
@@ -86,6 +91,11 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
     openMakeWarpDialog,
     openWarpDialog,
     closeWarpDialog,
+    openUserDialog,
+    closeUserDialog,
+    openUpdateAvatarDialog,
+    closeUpdateAvatarDialog,
+    deleteActiveWarp,
     setDialogSize, 
     setMeDialogOpen,
     isLoading,
@@ -96,8 +106,8 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   const centerTileRef = React.useRef<HTMLDivElement>(null);
   const [isPreparingWarp, setIsPreparingWarp] = React.useState(false);
   const [participantProfiles, setParticipantProfiles] = React.useState<UserProfile[]>([]);
-  const [isUpdatingAvatar, setUpdatingAvatar] = React.useState(false);
   const [isAddFriendsDialogOpen, setAddFriendsDialogOpen] = React.useState(false);
+  const [isUpdatingFriendship, setUpdatingFriendship] = React.useState(false);
   const [friends, setFriends] = React.useState<UserProfile[]>([]);
   const [segmentedControlSelection, setSegmentedControlSelection] = React.useState('World');
   const [warpPositions, setWarpPositions] = React.useState<{ [key: string]: { x: number, y: number } }>({});
@@ -259,8 +269,8 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
     }
   }, [warps, activeWarp, setActiveWarp]);
 
-  const shouldHideNavBar = isMakeWarpDialogOpen || isOpenWarpDialogOpen || isUpdatingAvatar;
-  const anyDialogOpen = isMakeWarpDialogOpen || isOpenWarpDialogOpen || isUpdatingAvatar || isMeDialogOpen || isAddFriendsDialogOpen;
+  const shouldHideNavBar = isMakeWarpDialogOpen || isOpenWarpDialogOpen || isUserDialogOpen || isUpdateAvatarDialogOpen;
+  const anyDialogOpen = isMakeWarpDialogOpen || isOpenWarpDialogOpen || isUserDialogOpen || isUpdateAvatarDialogOpen || isMeDialogOpen || isAddFriendsDialogOpen;
   const showTiles = !anyDialogOpen && !isPreview;
 
 
@@ -276,6 +286,23 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
     setActiveWarp(warp);
     openWarpDialog();
 
+  };
+
+  const handleOpenUserProfile = (user: UserProfile) => {
+    closeWarpDialog(true);
+    openUserDialog(user);
+  };
+
+  const handleUnfriend = async (userId: string) => {
+    setUpdatingFriendship(true);
+    try {
+      await removeFriend(userId);
+    } catch (error) {
+      console.error("Failed to unfriend user:", error);
+    } finally {
+      setUpdatingFriendship(false);
+    }
+    closeUserDialog();
   };
 
   // Convert Firestore Timestamp to Date for MakeWarpDialog
@@ -340,17 +367,29 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
               key={activeWarp.id}
               warp={activeWarp}
               participantProfiles={participantProfiles}
+              onProfileClick={handleOpenUserProfile}
               onClose={() => {
                 closeWarpDialog();
                 setParticipantProfiles([]);
               }}
               onSizeChange={setDialogSize}
               onEdit={() => {
-                closeWarpDialog();
+                closeWarpDialog(true);
                 startEditWarp(activeWarp)
               }}
+              onDelete={deleteActiveWarp}
             />
           )
+        )}
+        {profile && isUserDialogOpen && activeUserProfile && (
+          <UserDialog
+            user={activeUserProfile}
+            friends={friends}
+            isUpdatingFriendship={isUpdatingFriendship}
+            onClose={closeUserDialog}
+            onUnfriend={handleUnfriend}
+            onSizeChange={setDialogSize}
+          />
         )}
       </AnimatePresence>
 
@@ -408,6 +447,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
                 position={position}
                 onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
+                  handleOpenUserProfile(friend);
                 }}
               />
             );
@@ -440,22 +480,15 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
                 playDialogSound('close');
               }}
               onSizeChange={setDialogSize}
-              onUpdateProfile={() => {
-                isTransitioningToAvatar.current = true;
-                setMeDialogOpen(false);
-                setUpdatingAvatar(true);
-              }}
+              onUpdateProfile={openUpdateAvatarDialog}
               onDeleteAccount={() => setMeDialogOpen(false)}
             />
           )}
         </AnimatePresence>
       )}
-       {isUpdatingAvatar && profile && (
+       {isUpdateAvatarDialogOpen && profile && (
         <UpdateAvatarDialog
-          onClose={() => {
-            setUpdatingAvatar(false);
-            setMeDialogOpen(true);
-          }}
+          onClose={closeUpdateAvatarDialog}
           onSizeChange={setDialogSize}
         />
       )}
