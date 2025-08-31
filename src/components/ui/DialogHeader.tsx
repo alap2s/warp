@@ -2,9 +2,11 @@
 
 import React, { useLayoutEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface DialogHeaderProps {
   title: string | string[];
+  photoURL?: string;
   children?: React.ReactNode;
   className?: string;
 }
@@ -56,7 +58,7 @@ const useAutoFitFontSize = (text: string | string[], ref: React.RefObject<HTMLDi
   }, [text, ref]);
 };
 
-const DialogHeader = ({ title, children, className }: DialogHeaderProps) => {
+const DialogHeader = ({ title, photoURL, children, className }: DialogHeaderProps) => {
   const titleArray = Array.isArray(title) ? title : [title];
   const titleRef = useRef<HTMLDivElement>(null);
 
@@ -64,15 +66,26 @@ const DialogHeader = ({ title, children, className }: DialogHeaderProps) => {
 
   return (
     <div className={cn("flex justify-between gap-2", titleArray.length > 1 ? "items-start" : "items-center", className)}>
-      <div ref={titleRef} className="flex-grow" style={{ minWidth: 0 }}>
-        {titleArray.map((word, index) => (
-          <h2
-            key={index}
-            className="dialog-title"
-          >
-            {word}
-          </h2>
-        ))}
+      <div className="flex items-center gap-4 flex-grow" style={{ minWidth: 0 }}>
+        {photoURL && (
+          <Image
+            src={photoURL}
+            alt="Profile Photo"
+            width={48}
+            height={48}
+            className="rounded-xl object-cover"
+          />
+        )}
+        <div ref={titleRef} className="flex-grow" style={{ minWidth: 0 }}>
+          {titleArray.map((word, index) => (
+            <h2
+              key={index}
+              className="dialog-title"
+            >
+              {word}
+            </h2>
+          ))}
+        </div>
       </div>
       <div className="flex-shrink-0 flex items-center gap-2">
         {React.Children.map(children, (child, index) =>
