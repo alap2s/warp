@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { deleteUserAccount } from '@/lib/user';
 import { UserProfile } from '@/lib/types';
 import ThemeToggle from './ui/ThemeToggle';
+import { IconButton } from './ui/IconButton';
 
 const MeDialog = ({
   userProfile,
@@ -75,7 +76,7 @@ const MeDialog = ({
                         className="rounded-xl object-cover w-full h-full"
                     />
                 ) : (
-                    <UserSquare size={48} strokeWidth={1.5} className="text-white/40" />
+                    <IconButton icon={UserSquare} onClick={onUpdateProfile} variant="outline" className="w-12 h-12" />
                 )}
             </button>
             <div className="dialog-title">
