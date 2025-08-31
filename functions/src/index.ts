@@ -377,3 +377,32 @@ export const cleanupOrphanedNotifications = onSchedule({
     console.log("No orphaned notifications found.");
   }
 });
+
+export const removeFriend = onCall({region: "europe-west3", cors: true}, async (request) => {
+    const uid = request.auth?.uid;
+    const { friendId } = request.data;
+
+    if (!uid) {
+        throw new HttpsError("unauthenticated", "You must be logged in to remove a friend.");
+    }
+
+    if (!friendId) {
+        throw new HttpsError("invalid-argument", "friendId is a required parameter.");
+    }
+
+    const db = admin.firestore();
+    const currentUserFriendsRef = db.collection("users").doc(uid).collection("friends").doc(friendId);
+    const friendFriendsRef = db.collection("users").doc(friendId).collection("friends").doc(uid);
+
+    try {
+        await db.runTransaction(async (transaction) => {
+            transaction.delete(currentUserFriendsRef);
+            transaction.delete(friendFriendsRef);
+        });
+        console.log(`Friendship removed between ${uid} and ${friendId}`);
+        return { success: true };
+    } catch (error) {
+        console.error("Error removing friend:", error);
+        throw new HttpsError("internal", "An error occurred while trying to remove the friend.");
+    }
+});
