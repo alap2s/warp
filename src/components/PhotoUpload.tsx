@@ -46,7 +46,15 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onPhotoSelect, onViewChange }
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    onViewChange?.(uploadState);
+    if (uploadState === 'initial') {
+      setUploadState('options');
+    }
+  }, [uploadState]);
+
+  useEffect(() => {
+    if (uploadState !== 'initial') {
+      onViewChange?.(uploadState);
+    }
   }, [uploadState, onViewChange]);
 
   const applyGameboyFilter = useCallback((canvas: HTMLCanvasElement) => {
