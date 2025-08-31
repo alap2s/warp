@@ -1,44 +1,49 @@
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Dialog from './ui/Dialog';
 import { AtSign, Check } from 'lucide-react';
 import { IconButton } from './ui/IconButton';
 import { Input } from './ui/Input';
-import ThumbavatarSelector from './ui/ThumbavatarSelector';
 import { debounce } from 'lodash';
 import { isUsernameAvailable } from '@/lib/user';
-
+import PhotoUpload from './PhotoUpload';
+import { useAuth } from '@/context/AuthContext';
+import { dataURLtoBlob } from '@/lib/utils';
+import { uploadProfilePhoto } from '@/lib/storage';
 
 export const ProfileDialog = ({
   onSave,
   onClose,
   onSizeChange,
 }: {
-  onSave: (data: { username:string; icon: string }) => void;
+  onSave: (data: { username: string; photoURL: string }) => void;
   onClose: () => void;
   onSizeChange?: (size: { width: number, height: number }) => void;
 }) => {
+  const { user } = useAuth();
   const [username, setUsername] = useState('');
-  const [selectedIconSeed, setSelectedIconSeed] = useState<string>('Thumbs01.svg');
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [isValid, setIsValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedCheckUsername = useCallback(
-    debounce(async (name) => {
-      if (name.length >= 3) {
-        setIsLoading(true);
-        const available = await isUsernameAvailable(name);
-        setIsAvailable(available);
-        setIsValid(available);
-        setIsLoading(false);
-      } else {
-        setIsAvailable(null);
-        setIsValid(false);
-      }
-    }, 500),
+  // Debounced username check... (code is unchanged)
+  const debouncedCheckUsername = useMemo(
+    () =>
+      debounce(async (name) => {
+        if (name.length >= 3) {
+          setIsLoading(true);
+          const available = await isUsernameAvailable(name);
+          setIsAvailable(available);
+          setIsValid(available);
+          setIsLoading(false);
+        } else {
+          setIsAvailable(null);
+          setIsValid(false);
+        }
+      }, 500),
     []
   );
 
@@ -61,14 +66,27 @@ export const ProfileDialog = ({
     }
   };
 
-  const handleSave = () => {
-    if (username.trim() && selectedIconSeed && isValid && isAvailable) {
-      onSave({ username: username.trim(), icon: selectedIconSeed });
-    }
-  };
+  const handleSave = async () => {
+    if (!isValid || !selectedPhoto || !user) return;
+    
+    setIsUploading(true);
+    try {
+      const photoBlob = dataURLtoBlob(selectedPhoto);
+      const fileName = `${new Date().getTime()}.png`;
+      const file = new File([photoBlob], fileName, { type: 'image/png' });
 
-  const handleIconSelect = (seed: string) => {
-    setSelectedIconSeed(seed);
+      const downloadURL = await uploadProfilePhoto(file, user.uid);
+
+      if (downloadURL) {
+        onSave({ username: username.trim(), photoURL: downloadURL });
+      } else {
+        console.error("Photo upload failed.");
+      }
+    } catch (error) {
+      console.error("Error during save process:", error);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -79,7 +97,12 @@ export const ProfileDialog = ({
           <p>You</p>
         </div>
         <div className="flex gap-2">
-          <IconButton variant="default" onClick={handleSave} disabled={!isValid || isLoading} icon={Check} />
+          <IconButton 
+            variant="default" 
+            onClick={handleSave} 
+            disabled={!isValid || !selectedPhoto || isLoading || isUploading} 
+            icon={Check} 
+          />
         </div>
       </div>
 
@@ -103,13 +126,7 @@ export const ProfileDialog = ({
             ) : null
           }
         />
-        <div className="flex flex-col gap-2 bg-white/5 border border-white/10 rounded-2xl p-3">
-          <p className="text-xs font-medium text-white/40 -mt-1">Choose your thumbavatar</p>
-          <ThumbavatarSelector
-            onIconSelect={handleIconSelect}
-            defaultValue={selectedIconSeed}
-          />
-        </div>
+        <PhotoUpload onPhotoSelect={setSelectedPhoto} />
       </div>
     </Dialog>
   );

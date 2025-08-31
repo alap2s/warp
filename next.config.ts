@@ -1,14 +1,16 @@
-import type { NextConfig } from "next";
-import withPWA from "@ducanh2912/next-pwa";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: false, // This was causing double-invocation of effects
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        port: '',
+        pathname: '**',
+      },
+    ],
+  },
 };
 
-export default withPWA({
-  dest: "public",
-  register: true,
-  disable: process.env.NODE_ENV === "development",
-  cacheStartUrl: false,
-  dynamicStartUrl: false,
-})(nextConfig);
+module.exports = nextConfig;

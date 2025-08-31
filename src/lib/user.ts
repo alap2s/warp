@@ -13,11 +13,13 @@ import { auth, db } from "./firebase";
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { UserProfile } from "./types";
 
-export const createUserProfile = async (uid: string, data: { username: string; icon: string; photoURL?: string }) => {
+export const createUserProfile = async (uid: string, data: { username: string; photoURL: string }) => {
   try {
     await setDoc(doc(db, "users", uid), {
-      ...data,
       uid,
+      username: data.username,
+      photoURL: data.photoURL,
+      icon: '', // For backward compatibility
     });
   } catch (error) {
     console.error("Error creating user profile:", error);
@@ -74,8 +76,13 @@ export const updateUserProfile = async (
     notificationsEnabled?: boolean;
   }
 ) => {
-  const userRef = doc(db, 'users', userId);
-  await updateDoc(userRef, data);
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, data);
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    throw new Error('Failed to update user profile. Please try again.');
+  }
 };
 
 export const deleteUserAccount = async () => {

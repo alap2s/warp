@@ -13,7 +13,7 @@ import { Plus } from 'lucide-react';
 import OpenWarpDialog from './OpenWarpDialog';
 import LoadingDialog from './ui/LoadingDialog';
 import { useNotifications } from '@/lib/hooks/useNotifications';
-import { getUsersByIds, updateUserProfile } from '@/lib/user';
+import { getUsersByIds } from '@/lib/user';
 import { markNotificationsAsRead } from '@/lib/warp';
 import type { Warp, UserProfile, FriendActivityTile } from '@/lib/types';
 import { debounce } from 'lodash';
@@ -68,7 +68,7 @@ interface GridUIManagerProps {
 }
 
 const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) => {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile } = useAuth();
   const router = useRouter();
   const { notifications } = useNotifications(user?.uid || null);
   const { 
@@ -88,7 +88,6 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
     closeWarpDialog,
     setDialogSize, 
     setMeDialogOpen,
-    setUpdateAvatarDialogSize,
     isLoading,
     warps,
     setCenterTileSize,
@@ -104,6 +103,7 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   const [warpPositions, setWarpPositions] = React.useState<{ [key: string]: { x: number, y: number } }>({});
   const [screenSize, setScreenSize] = React.useState({ width: 0, height: 0 });
   const [sharedWarpHandled, setSharedWarpHandled] = React.useState(false);
+  const isTransitioningToAvatar = React.useRef(false);
 
   React.useEffect(() => {
     if (sharedWarp && !isPreview && !sharedWarpHandled) {
@@ -263,16 +263,6 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
   const anyDialogOpen = isMakeWarpDialogOpen || isOpenWarpDialogOpen || isUpdatingAvatar || isMeDialogOpen || isAddFriendsDialogOpen;
   const showTiles = !anyDialogOpen && !isPreview;
 
-
-  const handleAvatarSave = async (newIcon: string) => {
-    if (user) {
-      await updateUserProfile(user.uid, { icon: newIcon });
-      await refreshProfile();
-    }
-    setUpdatingAvatar(false);
-    setUpdateAvatarDialogSize(null);
-    setMeDialogOpen(true);
-  };
 
   const handleGridClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Clicks on the background should deselect the active warp and close the dialog.
@@ -443,11 +433,15 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
               onClose={() => {
                 setMeDialogOpen(false);
                 setDialogSize(null);
-                setSegmentedControlSelection('World');
+                if (!isTransitioningToAvatar.current) {
+                  setSegmentedControlSelection('World');
+                }
+                isTransitioningToAvatar.current = false; // Reset after use
                 playDialogSound('close');
               }}
               onSizeChange={setDialogSize}
-              onUpdateAvatar={() => {
+              onUpdateProfile={() => {
+                isTransitioningToAvatar.current = true;
                 setMeDialogOpen(false);
                 setUpdatingAvatar(true);
               }}
@@ -458,14 +452,11 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
       )}
        {isUpdatingAvatar && profile && (
         <UpdateAvatarDialog
-          defaultValue={profile.icon}
-          onSave={handleAvatarSave}
           onClose={() => {
             setUpdatingAvatar(false);
             setMeDialogOpen(true);
-            setUpdateAvatarDialogSize(null);
           }}
-          onSizeChange={setUpdateAvatarDialogSize}
+          onSizeChange={setDialogSize}
         />
       )}
         {profile && !shouldHideNavBar && (
