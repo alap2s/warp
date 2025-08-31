@@ -1,5 +1,5 @@
 // src/lib/audio.ts
-import type * as Tone from 'tone';
+import * as Tone from 'tone';
 
 // --- State ---
 let isInitialized = false;
@@ -116,7 +116,8 @@ export const playDialogSound = (action: 'open' | 'close') => {
 export const playNotification = () => {
   const now = Tone.now();
   if (now - lastPlayed > throttleTime / 1000) {
-    notificationSynth.triggerAttackRelease('G5', '8n');
+    if (!isInitialized || !notificationSynth) return;
+    notificationSynth.triggerAttackRelease('G5', '8n', now);
     lastPlayed = now;
   }
 };

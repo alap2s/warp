@@ -323,6 +323,8 @@ const GridUIManager = ({ sharedWarp, isPreview = false }: GridUIManagerProps) =>
             participantProfiles={[]}
             onClose={() => router.push('/')} // Redirect to home to start onboarding
             onEdit={() => {}} // No-op for preview
+            onProfileClick={() => {}} // No-op for preview
+            onDelete={() => {}} // No-op for preview
             isPreview={true}
             onSizeChange={setDialogSize}
         />

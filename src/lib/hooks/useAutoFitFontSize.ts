@@ -1,8 +1,8 @@
 'use client';
 
-import { useLayoutEffect } from 'react';
+import { useLayoutEffect, RefObject } from 'react';
 
-const useAutoFitFontSize = (text: string | string[], ref: React.RefObject<HTMLDivElement>) => {
+const useAutoFitFontSize = (text: string | string[], ref: RefObject<HTMLDivElement | null>) => {
   useLayoutEffect(() => {
     const titleArray = Array.isArray(text) ? text : [text];
     if (!ref.current || titleArray.length === 0) return;
