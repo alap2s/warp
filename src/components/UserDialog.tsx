@@ -19,10 +19,10 @@ interface UserDialogProps {
 }
 
 const UserDialog = ({ user, friends, isUpdatingFriendship, onClose, onUnfriend, onSizeChange }: UserDialogProps) => {
-  if (!user) return null;
-
   const usernameRef = useRef<HTMLDivElement>(null);
-  useAutoFitFontSize(user.username || '', usernameRef);
+  useAutoFitFontSize(user?.username || '', usernameRef);
+
+  if (!user) return null;
 
   const isFriend = friends.some(friend => friend.uid === user.uid);
 
