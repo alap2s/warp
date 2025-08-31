@@ -46,12 +46,12 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onPhotoSelect, onViewChange }
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (uploadState === 'initial') {
-      setUploadState('options');
-    }
-  }, [uploadState]);
+    // Transition from initial to options view on mount
+    setUploadState('options');
+  }, []);
 
   useEffect(() => {
+    // Notify parent component of view change, skipping the internal 'initial' state
     if (uploadState !== 'initial') {
       onViewChange?.(uploadState);
     }
@@ -202,6 +202,8 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onPhotoSelect, onViewChange }
 
   const renderContent = () => {
     switch (uploadState) {
+      case 'initial':
+        return null;
       case 'camera':
         return (
           <div className="flex gap-4 items-start w-full">
