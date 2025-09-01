@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 
 const CAMERA_WIDTH = 160;
-const CAMERA_HEIGHT = 144;
+const CAMERA_HEIGHT = 160;
 
 const PALETTE = [
   [0, 0, 0],       // Black
@@ -65,7 +65,24 @@ const CameraFeed = forwardRef<HTMLVideoElement, CameraFeedProps>(({
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         if (!ctx) return;
 
-        ctx.drawImage(video, 0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+        const hRatio = canvas.width / video.videoWidth;
+        const vRatio = canvas.height / video.videoHeight;
+        const ratio = Math.max(hRatio, vRatio);
+        const centerShift_x = (canvas.width - video.videoWidth * ratio) / 2;
+        const centerShift_y = (canvas.height - video.videoHeight * ratio) / 2;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(
+          video,
+          0,
+          0,
+          video.videoWidth,
+          video.videoHeight,
+          centerShift_x,
+          centerShift_y,
+          video.videoWidth * ratio,
+          video.videoHeight * ratio
+        );
 
         if (isFilterEnabled) {
           const imageData = ctx.getImageData(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);

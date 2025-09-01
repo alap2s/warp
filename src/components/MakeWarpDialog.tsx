@@ -337,7 +337,7 @@ export const MakeWarpDialog = ({
           <IconButton variant="outline" onClick={handleDelete} disabled={isDeleting} icon={Trash2} />
         )}
           <IconButton variant="outline" onClick={onClose} icon={X} />
-        <IconButton variant="default" onClick={handlePost} icon={Check} />
+        <IconButton variant="default" onClick={handlePost} icon={Check} disabled={!whatValue.trim()} />
       </DialogHeader>
 
         <Input
@@ -393,7 +393,7 @@ export const MakeWarpDialog = ({
         <Input
           id="where"
           name="where"
-          placeholder="Where?"
+          placeholder="Where? (Real or digital)"
           value={whereValue}
           onChange={(e) => setWhereValue(e.target.value)}
           onIconClick={handleLocationReset}

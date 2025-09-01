@@ -119,17 +119,17 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
         <hr className="border-white/20" />
         <div className="flex flex-col gap-4">
           <div>
-            <p className="text-sm text-neutral-400">What</p>
+            <p className="text-sm text-neutral-500">What</p>
             <p className="text-lg text-white">{what}</p>
           </div>
           <hr className="border-white/20" />
           <div>
-            <p className="text-sm text-neutral-400">When</p>
+            <p className="text-sm text-neutral-500">When</p>
             <p className="text-lg text-white">{`${formatEuropeanDate(date)}, ${formatTime(date)}`}</p>
           </div>
           <hr className="border-white/20" />
           <div>
-            <p className="text-sm text-neutral-400">Where</p>
+            <p className="text-sm text-neutral-500">Where</p>
             <div className="flex items-center justify-between cursor-pointer gap-2" onClick={handleLocationClick}>
               <p className="text-lg text-white">{where}</p>
               {warp.coordinates && (
@@ -168,7 +168,7 @@ const OpenWarpDialog = ({ warp, participantProfiles, onClose, onSizeChange, onEd
                 <IconButton variant="outline" onClick={onEdit} icon={Edit} />
                 <IconButton variant="outline" onClick={onDelete} icon={Trash2} />
               </div>
-              <Button variant="secondary" onClick={handleShare}>
+              <Button variant="primary" onClick={handleShare}>
                 <Share size={16} className="mr-2" />
                 Share
               </Button>
