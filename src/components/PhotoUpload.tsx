@@ -9,7 +9,7 @@ import { Button } from './ui/Button';
 import { IconButton } from './ui/IconButton';
 
 const CAMERA_WIDTH = 160;
-const CAMERA_HEIGHT = 144;
+const CAMERA_HEIGHT = 160;
 
 const PALETTE = [
   [0, 0, 0],       // Black
@@ -194,7 +194,7 @@ export const PhotoUpload = ({ onPhotoSelect, onViewChange }: {
       case 'camera':
         return (
           <div className="flex gap-4 items-start w-full">
-            <div className="w-40 h-36 rounded-lg overflow-hidden flex-shrink-0 bg-black">
+            <div className="w-40 h-40 rounded-lg overflow-hidden flex-shrink-0 bg-black">
               <CameraFeed ref={videoRef} stream={stream} />
             </div>
             <div className="flex flex-col gap-2">
@@ -206,7 +206,7 @@ export const PhotoUpload = ({ onPhotoSelect, onViewChange }: {
       case 'preview':
         return (
           <div className="flex gap-4 items-start w-full">
-            <div className="w-40 h-36 rounded-lg overflow-hidden flex-shrink-0">
+            <div className="w-40 h-40 rounded-lg overflow-hidden flex-shrink-0">
               {imageData && <NextImage src={imageData} alt="Preview" width={CAMERA_WIDTH} height={CAMERA_HEIGHT} className="w-full h-full object-cover" style={{ imageRendering: 'pixelated' }} />}
             </div>
             <div className="flex flex-col gap-2">
