@@ -55,6 +55,43 @@ export const getAddressFromCoordinates = async (lat: number, lng: number): Promi
     }
 };
 
+const placeTypes = [
+  'restaurant', 'cafe', 'bar', 'bakery', 'meal_takeaway',
+  'supermarket', 'grocery_or_supermarket', 'shopping_mall', 'clothing_store', 'book_store', 'electronics_store', 'store',
+  'gym', 'spa', 'beauty_salon', 'pharmacy',
+  'park', 'museum', 'art_gallery', 'movie_theater', 'stadium', 'night_club',
+  'airport', 'train_station', 'subway_station', 'bus_station', 'lodging',
+  'library', 'post_office', 'university', 'church', 'place_of_worship'
+];
+
+export const getPlaceOrAddressFromCoordinates = async (lat: number, lng: number): Promise<string> => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+        console.error('Google Maps API key is missing.');
+        return getAddressFromCoordinates(lat, lng);
+    }
+
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=20&types=${placeTypes.join('|')}&key=${apiKey}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.results && data.results.length > 0) {
+            // Potentially filter further or just take the first one
+            const closestPlace = data.results[0];
+            return closestPlace.name;
+        } else {
+            // Fallback to reverse geocoding
+            return getAddressFromCoordinates(lat, lng);
+        }
+    } catch (error) {
+        console.error('Error with Places API:', error);
+        // Fallback to reverse geocoding on error
+        return getAddressFromCoordinates(lat, lng);
+    }
+};
+
 export const getCoordinatesFromAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {

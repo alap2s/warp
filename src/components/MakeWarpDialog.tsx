@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import Dialog from './ui/Dialog';
 import DialogHeader from './ui/DialogHeader';
-import { getCurrentCoordinates, getAddressFromCoordinates, getCoordinatesFromAddress } from '@/lib/location';
+import { getCurrentCoordinates, getPlaceOrAddressFromCoordinates, getCoordinatesFromAddress, getAddressFromCoordinates } from '@/lib/location';
 import { getIconName } from '@/lib/icon-map';
 import DynamicIcon from './ui/DynamicIcon';
 import SegmentedControl from './ui/SegmentedControl';
@@ -191,7 +191,7 @@ export const MakeWarpDialog = ({
       getCurrentCoordinates()
         .then(coords => {
           setCoordinates(coords);
-          return getAddressFromCoordinates(coords.lat, coords.lng);
+          return getPlaceOrAddressFromCoordinates(coords.lat, coords.lng);
         })
         .then(address => {
           setWhereValue(address);
@@ -302,12 +302,11 @@ export const MakeWarpDialog = ({
   };
 
   const handleLocationReset = () => {
-    setWhereValue('Fetching location...');
     setIsGeocoding(true);
     getCurrentCoordinates()
       .then(coords => {
         setCoordinates(coords);
-        return getAddressFromCoordinates(coords.lat, coords.lng);
+        return getPlaceOrAddressFromCoordinates(coords.lat, coords.lng);
       })
       .then(address => {
         setWhereValue(address);
